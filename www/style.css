@@ -12,33 +12,62 @@
   border-bottom: 1px solid #e9ecef;
 }
 
+.sidebar-menu li a.disabled {
+  color: #999 !important;
+  cursor: not-allowed !important;
+  opacity: 0.5;
+}
+
+.sidebar-menu li a.disabled:hover {
+  background-color: transparent !important;
+}
+
 .sidebar-menu li.active a {
   background-color: #007bff;
   color: white;
 }
 
-/* Make the settings box more compact */
-.box {
-  margin-bottom: 10px;
-}
-
-.box-header {
-  padding: 8px 15px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #ddd;
-}
-
-.box-body {
+/* Make the settings panel more compact */
+.settings-panel {
+  height: 100vh;
+  overflow-y: auto;
   padding: 15px;
 }
 
-/* Style form controls */
+/* Style tabs to be more compact */
+.nav-tabs {
+  border-bottom: 1px solid #dee2e6;
+  margin-bottom: 15px;
+}
+
+.nav-tabs > li > a {
+  padding: 8px 12px;
+  font-size: 12px;
+  margin-right: 2px;
+  border: 1px solid transparent;
+  border-radius: 4px 4px 0 0;
+}
+
+.nav-tabs > li.active > a {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.nav-tabs > li > a:hover {
+  border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+/* Make form controls more compact */
 .form-control {
   margin-bottom: 8px;
+  font-size: 12px;
+  padding: 4px 8px;
+  height: auto;
 }
 
 .form-group {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 /* Make sliders more compact */
@@ -46,9 +75,16 @@
   margin-bottom: 8px;
 }
 
+.irs-slider {
+  width: 16px;
+  height: 16px;
+}
+
 /* Style buttons */
 .btn {
   margin-bottom: 8px;
+  font-size: 12px;
+  padding: 6px 12px;
 }
 
 .btn-block {
@@ -107,13 +143,7 @@
   background: #555;
 }
 
-/* Style the tabs */
-.nav-tabs > li > a {
-  padding: 8px 12px;
-  font-size: 13px;
-}
-
-/* Make the plot output more responsive */
+/* Style the plot output more responsive */
 .shiny-plot-output {
   max-width: 100%;
   height: auto;
@@ -122,29 +152,95 @@
 /* Style the help text */
 .help-text {
   color: #6c757d;
-  font-size: 12px;
+  font-size: 11px;
   font-style: italic;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 /* Style section headers */
 h4 {
   color: #495057;
-  margin-top: 20px;
-  margin-bottom: 15px;
+  margin-top: 15px;
+  margin-bottom: 12px;
   border-bottom: 2px solid #007bff;
   padding-bottom: 5px;
+  font-size: 16px;
 }
 
 h5 {
   color: #6c757d;
-  margin-top: 15px;
-  margin-bottom: 10px;
+  margin-top: 12px;
+  margin-bottom: 8px;
   font-weight: 600;
+  font-size: 14px;
 }
 
 /* Style horizontal rules */
 hr {
-  margin: 15px 0;
+  margin: 12px 0;
   border-color: #dee2e6;
+}
+
+/* Make numeric inputs more compact */
+input[type="number"] {
+  font-size: 11px;
+  padding: 3px 6px;
+}
+
+/* Style select inputs */
+select {
+  font-size: 11px;
+  padding: 3px 6px;
+}
+
+/* Make checkboxes more compact */
+input[type="checkbox"] {
+  margin-right: 5px;
+}
+
+/* Tab content padding */
+.tab-content {
+  padding: 10px 0;
+}
+
+.tab-pane {
+  padding: 5px 0;
+}
+
+/* Compact fluid rows */
+.fluid-row {
+  margin: 0;
+}
+
+/* Column spacing */
+.col-sm-6 {
+  padding: 0 5px;
+}
+
+/* Remove unnecessary margins */
+.row {
+  margin: 0;
+}
+
+/* Make the overall interface more compact */
+body {
+  font-size: 12px;
+}
+
+/* Style the main content area */
+.content-wrapper {
+  background-color: #f8f9fa;
+}
+
+/* Remove box shadows and borders for cleaner look */
+.box {
+  box-shadow: none;
+  border: none;
+  background: transparent;
+}
+
+/* Make the interface feel more modern */
+.shiny-plot-output {
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }

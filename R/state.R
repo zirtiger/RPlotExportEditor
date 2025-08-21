@@ -43,15 +43,72 @@ ensure_edits <- function(rv, name, grid = FALSE) {
       v <- tryCatch(p$labels[[lbl]], error = function(...) NULL)
       if (is.null(v)) NULL else as.character(v)
     }
+    
+    # Get current plot ranges for axis limits
+    get_x_range <- function() {
+      tryCatch({
+        x_var <- p$mapping$x %||% names(p$data)[1]
+        if (!is.null(x_var) && x_var %in% names(p$data)) {
+          x_data <- p$data[[x_var]]
+          if (is.numeric(x_data)) range(x_data, na.rm = TRUE) else NULL
+        } else NULL
+      }, error = function(...) NULL)
+    }
+    
+    get_y_range <- function() {
+      tryCatch({
+        y_var <- p$mapping$y %||% names(p$data)[2]
+        if (!is.null(y_var) && y_var %in% names(p$data)) {
+          y_data <- p$data[[y_var]]
+          if (is.numeric(y_data)) range(y_data, na.rm = TRUE) else NULL
+        } else NULL
+      }, error = function(...) NULL)
+    }
+    
+    x_range <- get_x_range()
+    y_range <- get_y_range()
+    
     rv[[bucket]][[name]] <- list(
+      # Basic text labels
       title      = get_lab("title"),
       subtitle   = get_lab("subtitle"),
       caption    = get_lab("caption"),
       xlab       = get_lab("x"),
       ylab       = get_lab("y"),
+      
+      # Theme settings
       theme      = BASE$theme,
       base_size  = BASE$base_size,
-      legend_pos = BASE$legend_pos
+      legend_pos = BASE$legend_pos,
+      
+      # Text sizes
+      title_size      = BASE$title_size,
+      subtitle_size   = BASE$subtitle_size,
+      caption_size    = BASE$caption_size,
+      axis_title_size = BASE$axis_title_size,
+      axis_text_size  = BASE$axis_text_size,
+      legend_title_size = BASE$legend_title_size,
+      legend_text_size  = BASE$legend_text_size,
+      
+      # Axis limits (from plot data if available)
+      x_min = if (!is.null(x_range)) x_range[1] else NULL,
+      x_max = if (!is.null(x_range)) x_range[2] else NULL,
+      y_min = if (!is.null(y_range)) y_range[1] else NULL,
+      y_max = if (!is.null(y_range)) y_range[2] else NULL,
+      
+      # Axis breaks (default to NULL, user can set)
+      x_major = NULL,
+      x_minor = NULL,
+      y_major = NULL,
+      y_minor = NULL,
+      
+      # Theme customizations
+      legend_box = TRUE,
+      panel_bg = "Default",
+      plot_bg = "Default",
+      grid_major = TRUE,
+      grid_minor = TRUE,
+      grid_color = "Default"
     )
   }
   

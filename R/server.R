@@ -202,6 +202,25 @@ app_server <- function(input, output, session) {
     )
   })
   
+  # --- Smart menu activation --------------------------------------------
+  observe({
+    # Determine which menu items should be active based on current context
+    active_tab <- rv$active_tab
+    has_plots <- length(rv$plots) > 0
+    
+    # Grid is always active if we have plots
+    # Export is active for both grid and individual plots
+    # Text and Theme are only active for individual plots (not grid)
+    text_active <- has_plots && !identical(active_tab, "Grid")
+    theme_active <- has_plots && !identical(active_tab, "Grid")
+    
+    # Update menu item classes to show active/inactive state
+    session$sendCustomMessage("updateMenuState", list(
+      text_active = text_active,
+      theme_active = theme_active
+    ))
+  })
+  
   # --- Sidebar panes (observers) ---------------------------------------
   output$tabs_area  <- renderUI({ tabs_area_ui(rv) })
   register_preview_outputs(output, rv)

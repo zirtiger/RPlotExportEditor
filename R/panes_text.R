@@ -23,52 +23,99 @@ text_pane_ui <- function(rv) {
     if (is.null(val)) "" else as.character(val)
   }
   
+  # Get current plot values for defaults
+  current_x_range <- tryCatch({
+    x_data <- p$data[[p$mapping$x %||% names(p$data)[1]]]
+    if (is.numeric(x_data)) range(x_data, na.rm = TRUE) else c(0, 10)
+  }, error = function(...) c(0, 10))
+  
+  current_y_range <- tryCatch({
+    y_data <- p$data[[p$mapping$y %||% names(p$data)[2]]]
+    if (is.numeric(y_data)) range(y_data, na.rm = TRUE) else c(0, 10)
+  }, error = function(...) c(0, 10))
+  
   tagList(
     actionButton("apply_all_text", "Use for all plots", class = "btn btn-sm btn-default btn-block"),
     tags$hr(),
     h4(sprintf("Text — %s", ap)),
-    tags$hr(),
-    h5("Labels"),
-    textInput("ui_title",    "Title",    e$title    %||% get_lab("title")),
-    textInput("ui_subtitle", "Subtitle", e$subtitle %||% get_lab("subtitle")),
-    textInput("ui_caption",  "Caption",  e$caption  %||% get_lab("caption")),
-    textInput("ui_xlab",     "X label",  e$xlab     %||% get_lab("x")),
-    textInput("ui_ylab",     "Y label",  e$ylab     %||% get_lab("y")),
-    tags$hr(),
-    h5("Text Sizes"),
-    sliderInput("ui_title_size", "Title size", 
-               value = e$title_size %||% BASE$title_size, 
-               min = 8, max = 24, step = 1),
-    sliderInput("ui_subtitle_size", "Subtitle size", 
-               value = e$subtitle_size %||% BASE$subtitle_size, 
-               min = 6, max = 20, step = 1),
-    sliderInput("ui_caption_size", "Caption size", 
-               value = e$caption_size %||% BASE$caption_size, 
-               min = 6, max = 18, step = 1),
-    sliderInput("ui_axis_title_size", "Axis title size", 
-               value = e$axis_title_size %||% BASE$axis_title_size, 
-               min = 8, max = 20, step = 1),
-    sliderInput("ui_axis_text_size", "Axis text size", 
-               value = e$axis_text_size %||% BASE$axis_text_size, 
-               min = 6, max = 18, step = 1),
-    sliderInput("ui_legend_title_size", "Legend title size", 
-               value = e$legend_title_size %||% BASE$legend_title_size, 
-               min = 8, max = 20, step = 1),
-    sliderInput("ui_legend_text_size", "Legend text size", 
-               value = e$legend_text_size %||% BASE$legend_text_size, 
-               min = 6, max = 18, step = 1),
-    tags$hr(),
-    h5("Axis Limits & Steps"),
-    numericInput("ui_x_min", "X axis min", value = e$x_min, step = 0.1),
-    numericInput("ui_x_max", "X axis max", value = e$x_max, step = 0.1),
-    numericInput("ui_y_min", "Y axis min", value = e$y_min, step = 0.1),
-    numericInput("ui_y_max", "Y axis max", value = e$y_max, step = 0.1),
-    tags$hr(),
-    h5("Axis Breaks"),
-    numericInput("ui_x_major", "X major breaks", value = e$x_major, min = 1, step = 1),
-    numericInput("ui_x_minor", "X minor breaks", value = e$x_minor, min = 0, step = 1),
-    numericInput("ui_y_major", "Y major breaks", value = e$y_major, min = 1, step = 1),
-    numericInput("ui_y_minor", "Y minor breaks", value = e$y_minor, min = 0, step = 1)
+    
+    # Use tabset for better organization
+    tabsetPanel(
+      id = "text_tabs",
+      tabPanel("Labels", 
+        div(style = "padding: 10px 0;",
+          textInput("ui_title",    "Title",    e$title    %||% get_lab("title")),
+          textInput("ui_subtitle", "Subtitle", e$subtitle %||% get_lab("subtitle")),
+          textInput("ui_caption",  "Caption",  e$caption  %||% get_lab("caption")),
+          textInput("ui_xlab",     "X label",  e$xlab     %||% get_lab("x")),
+          textInput("ui_ylab",     "Y label",  e$ylab     %||% get_lab("y"))
+        )
+      ),
+      
+      tabPanel("Text Sizes",
+        div(style = "padding: 10px 0;",
+          sliderInput("ui_title_size", "Title size", 
+                     value = e$title_size %||% BASE$title_size, 
+                     min = 8, max = 24, step = 1, width = "100%"),
+          sliderInput("ui_subtitle_size", "Subtitle size", 
+                     value = e$subtitle_size %||% BASE$subtitle_size, 
+                     min = 6, max = 20, step = 1, width = "100%"),
+          sliderInput("ui_caption_size", "Caption size", 
+                     value = e$caption_size %||% BASE$caption_size, 
+                     min = 6, max = 18, step = 1, width = "100%"),
+          sliderInput("ui_axis_title_size", "Axis title size", 
+                     value = e$axis_title_size %||% BASE$axis_title_size, 
+                     min = 8, max = 20, step = 1, width = "100%"),
+          sliderInput("ui_axis_text_size", "Axis text size", 
+                     value = e$axis_text_size %||% BASE$axis_text_size, 
+                     min = 6, max = 18, step = 1, width = "100%"),
+          sliderInput("ui_legend_title_size", "Legend title size", 
+                     value = e$legend_title_size %||% BASE$legend_title_size, 
+                     min = 8, max = 20, step = 1, width = "100%"),
+          sliderInput("ui_legend_text_size", "Legend text size", 
+                     value = e$legend_text_size %||% BASE$legend_text_size, 
+                     min = 6, max = 18, step = 1, width = "100%")
+        )
+      ),
+      
+      tabPanel("Axis Limits",
+        div(style = "padding: 10px 0;",
+          fluidRow(
+            column(6, numericInput("ui_x_min", "X min", 
+                                  value = e$x_min %||% current_x_range[1], 
+                                  step = 0.1, width = "100%")),
+            column(6, numericInput("ui_x_max", "X max", 
+                                  value = e$x_max %||% current_x_range[2], 
+                                  step = 0.1, width = "100%"))
+          ),
+          fluidRow(
+            column(6, numericInput("ui_y_min", "Y min", 
+                                  value = e$y_min %||% current_y_range[1], 
+                                  step = 0.1, width = "100%")),
+            column(6, numericInput("ui_y_max", "Y max", 
+                                  value = e$y_max %||% current_y_range[2], 
+                                  step = 0.1, width = "100%"))
+          )
+        )
+      ),
+      
+      tabPanel("Axis Breaks",
+        div(style = "padding: 10px 0;",
+          fluidRow(
+            column(6, numericInput("ui_x_major", "X major", 
+                                  value = e$x_major, min = 1, step = 1, width = "100%")),
+            column(6, numericInput("ui_x_minor", "X minor", 
+                                  value = e$x_minor, min = 0, step = 1, width = "100%"))
+          ),
+          fluidRow(
+            column(6, numericInput("ui_y_major", "Y major", 
+                                  value = e$y_major, min = 1, step = 1, width = "100%")),
+            column(6, numericInput("ui_y_minor", "Y minor", 
+                                  value = e$y_minor, min = 0, step = 1, width = "100%"))
+          )
+        )
+      )
+    )
   )
 }
 

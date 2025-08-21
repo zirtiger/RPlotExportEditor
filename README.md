@@ -2,54 +2,74 @@
 
 A comprehensive Shiny app for editing ggplot2 plots with real-time preview and export capabilities. This app provides a WYSIWYG (What You See Is What You Get) interface for customizing plots before export.
 
-## Features
+## ✨ **New Features & Improvements**
 
-### 🎯 **Core Functionality**
+### 🎯 **Smart Menu Activation**
+- **Context-aware menus**: Only relevant menu items are active based on current view
+- **Grid view**: Text and Theme menus are greyed out (not applicable to grid)
+- **Individual plots**: All menus are active and functional
+- **Visual feedback**: Inactive menus are clearly marked and non-clickable
+
+### 🎨 **Compact Tabbed Interface**
+- **Organized options**: Related settings grouped into logical tabs
+- **Space efficient**: Fits comfortably in the sidebar without scrolling
+- **Better UX**: Clear separation of different option categories
+
+### 🎛️ **Improved Layout**
+- **Tighter design**: No unnecessary padding between elements
+- **Full-height panels**: Settings and plots use entire browser height
+- **Header removed**: More space for actual functionality
+- **Responsive design**: Adapts to different screen sizes
+
+### 📊 **Enhanced Plot Integration**
+- **Auto-populated defaults**: Options default to current plot values when available
+- **Smart fallbacks**: Uses global defaults only when plot values aren't available
+- **Real-time updates**: Changes reflect immediately in preview
+
+## 🚀 **Core Functionality**
+
+### **Plot Management**
 - Load multiple ggplot2 plots (.rds files)
 - Real-time preview of all changes
 - Grid layout system for combining multiple plots
 - Export plots in multiple formats (PNG, TIFF, PDF, SVG, EPS)
 
-### 🎨 **Text Customization**
-- **Labels**: Title, subtitle, caption, X/Y axis labels
-- **Text Sizes**: Customizable sizes for all text elements
-  - Title, subtitle, caption sizes
-  - Axis title and text sizes
-  - Legend title and text sizes
-- **Axis Control**: Set min/max values and major/minor break intervals
+### **Text Customization** (Tabbed Interface)
+- **Labels Tab**: Title, subtitle, caption, X/Y axis labels
+- **Text Sizes Tab**: Sliders for all text elements (8-24pt range)
+- **Axis Limits Tab**: Min/max values with plot-based defaults
+- **Axis Breaks Tab**: Major/minor break intervals
 
-### 🎭 **Theme Customization**
-- **Base Themes**: Choose from ggplot2's built-in themes
-- **Backgrounds**: Customize panel and plot backgrounds
-- **Grid Lines**: Control major/minor grid lines with custom colors
-- **Legend**: Position and styling options
+### **Theme Customization** (Tabbed Interface)
+- **Base Tab**: Theme selection and base text size
+- **Legend Tab**: Position and box styling
+- **Backgrounds Tab**: Panel and plot background colors
+- **Grid Lines Tab**: Major/minor grid control with colors
 
-### 📐 **Grid Layout System**
-- Arrange multiple plots in custom grid layouts
-- Assign specific plots to grid cells
-- Unified legend management
-- Grid-specific export settings
-
-### 💾 **Export Options**
+### **Export Options** (Tabbed Interface)
+- **Dimensions Tab**: Width/height sliders (side by side)
+- **Quality Tab**: DPI presets (72, 150, 300, 600) + custom
 - **Multiple Formats**: PNG, TIFF, PDF, SVG, EPS
-- **Quality Control**: Common DPI presets (72, 150, 300, 600) + custom options
-- **Dimensions**: Precise control over width and height in millimeters
-- **Download Buttons**: Direct download from both plot tabs and export panel
+- **Download Buttons**: Direct download from both tabs and export panel
 
-### 🎛️ **User Interface**
-- **Tighter Layout**: Compact sidebar with full-height settings panel
-- **Intuitive Controls**: Sliders for text sizes, DPI presets for common use cases
-- **Organized Menus**: Logical grouping of related options
-- **Responsive Design**: Adapts to different screen sizes
+## 🎨 **Menu Structure & Logic**
 
-## Menu Structure
+1. **Grid** - Always active when plots are loaded
+   - Layout and arrangement of multiple plots
+   - Grid-specific export settings
 
-1. **Grid** - Layout and arrangement of multiple plots
-2. **Export** - Export settings and download options
-3. **Text** - Text content and sizing customization
-4. **Theme** - Visual styling and appearance
+2. **Export** - Always active (applies to both grid and plots)
+   - Export configuration and download options
 
-## Installation & Usage
+3. **Text** - Active only for individual plots (not grid)
+   - Text content and sizing customization
+   - Axis limits and break intervals
+
+4. **Theme** - Active only for individual plots (not grid)
+   - Visual styling and appearance
+   - Backgrounds and grid lines
+
+## 🛠️ **Installation & Usage**
 
 ### Prerequisites
 ```r
@@ -66,69 +86,82 @@ install.packages(c("ragg", "svglite", "pdftools", "rsvg", "magick"))
 shiny::runApp()
 ```
 
-## File Structure
+### Testing the App
+```r
+source("test_app.R")
+```
+
+## 📁 **File Structure**
 
 ```
 plot-editor/
 ├── app.R                 # Main entry point
+├── test_app.R           # Test script to verify app loads
 ├── R/
 │   ├── globals.R        # Default settings and constants
-│   ├── ui.R            # Main UI layout
-│   ├── server.R        # Server logic and download handlers
-│   ├── state.R         # Reactive state management
+│   ├── ui.R            # Main UI layout (no header, tight spacing)
+│   ├── server.R        # Server logic with smart menu activation
+│   ├── state.R         # Reactive state with plot-based defaults
 │   ├── helpers_plots.R # Plot editing and export functions
 │   ├── panes_grid.R    # Grid layout controls
-│   ├── panes_export.R  # Export settings and controls
-│   ├── panes_text.R    # Text customization options
-│   ├── panes_theme.R   # Theme and styling options
+│   ├── panes_export.R  # Export settings with tabs
+│   ├── panes_text.R    # Text customization with tabs
+│   ├── panes_theme.R   # Theme options with tabs
 │   └── tabs_preview.R  # Plot preview tabs
 ├── www/
-│   └── style.css       # Custom styling
+│   ├── style.css       # Compact styling and tab design
+│   └── script.js       # Smart menu activation logic
 └── README.md           # This file
 ```
 
-## Usage Tips
+## 🎯 **Usage Tips**
 
-### Loading Plots
+### **Loading Plots**
 - Use the file input to load .rds files containing ggplot2 objects
 - Click "Load 3 demo plots" to start with example data
 - Multiple plots can be loaded simultaneously
 
-### Grid Layout
-- Set the number of rows and columns
-- Assign plots to specific grid cells
-- Use "Collect/common legend" for unified legends
+### **Smart Menu Usage**
+- **Grid tab**: Use Grid and Export menus for layout and export
+- **Plot tabs**: All menus are active for comprehensive customization
+- **Inactive menus**: Clearly marked and won't respond to clicks
 
-### Export Settings
-- Configure dimensions in millimeters for precise control
-- Choose from common DPI presets or set custom values
-- Apply export settings to all plots with one click
+### **Tabbed Interface**
+- **Text pane**: Use tabs to organize different text customization areas
+- **Theme pane**: Separate tabs for base, legend, backgrounds, and grid
+- **Export pane**: Dimensions and quality in separate tabs
 
-### Text Customization
-- Edit text content and sizes independently
-- Control axis limits and break intervals
-- Apply text settings across all plots
+### **Plot Integration**
+- Text options default to current plot values when available
+- Axis limits automatically populate from plot data ranges
+- Empty fields use global defaults only when necessary
 
-### Theme Customization
-- Mix and match theme elements
-- Customize backgrounds and grid lines
-- Control legend appearance
+## 🔧 **Technical Features**
 
-## Export Formats
+### **Error Prevention**
+- Fixed sequence errors with proper validation
+- Safe handling of non-finite numbers
+- Graceful fallbacks for missing data
 
-- **PNG/TIFF**: Raster formats with DPI control
-- **PDF**: Vector format, ideal for publications
-- **SVG**: Web-friendly vector format
-- **EPS**: PostScript format for legacy systems
+### **Performance**
+- Compact UI reduces scrolling
+- Efficient state management
+- Real-time preview updates
 
-## Contributing
+### **Accessibility**
+- Clear visual hierarchy
+- Consistent interface patterns
+- Responsive design principles
+
+## 🤝 **Contributing**
 
 This app is designed to be easily extensible. New customization options can be added by:
 1. Adding new fields to the `BASE` configuration in `globals.R`
-2. Creating UI controls in the appropriate pane file
+2. Creating UI controls in the appropriate pane file with tabs
 3. Adding observers in the pane's observer function
 4. Implementing the logic in `helpers_plots.R`
+5. Updating the state initialization in `state.R`
 
-## License
+## 📄 **License**
 
 This project is open source and available under the MIT License.
