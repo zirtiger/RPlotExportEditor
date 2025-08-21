@@ -12,15 +12,7 @@ BASE <- list(
   grid_rows       = 1,
   grid_cols       = 2,
   grid_collect    = TRUE,
-  grid_legend_pos = "bottom",
-  # Text sizes
-  title_size      = 14,
-  subtitle_size   = 12,
-  caption_size    = 10,
-  axis_title_size = 12,
-  axis_text_size  = 10,
-  legend_title_size = 12,
-  legend_text_size  = 10
+  grid_legend_pos = "bottom"
 )
 
 # ---- Optional converters for vector → PNG preview --------------------
