@@ -16,13 +16,41 @@ theme_pane_ui <- function(rv) {
   e <- rv$edits[[ap]]
   
   tagList(
-    actionButton("apply_all_theme", "Use for all plots", class = "btn btn-sm btn-default"),
+    actionButton("apply_all_theme", "Use for all plots", class = "btn btn-sm btn-default btn-block"),
+    tags$hr(),
     h4(sprintf("Theme — %s", ap)),
+    tags$hr(),
+    h5("Base Theme"),
     selectInput("ui_theme", "Theme",
                 choices = c("theme_minimal","theme_classic","theme_bw","theme_light","theme_gray"),
                 selected = e$theme %||% BASE$theme),
-    numericInput("ui_base_size", "Base text size", value = e$base_size %||% BASE$base_size, min = 6, max = 30, step = 1),
-    selectInput("ui_legend_pos", "Legend position", choices = LEGEND_POS, selected = e$legend_pos %||% BASE$legend_pos)
+    sliderInput("ui_base_size", "Base text size", 
+               value = e$base_size %||% BASE$base_size, 
+               min = 6, max = 30, step = 1),
+    tags$hr(),
+    h5("Legend"),
+    selectInput("ui_legend_pos", "Legend position", 
+                choices = LEGEND_POS, 
+                selected = e$legend_pos %||% BASE$legend_pos),
+    checkboxInput("ui_legend_box", "Legend box", 
+                  value = e$legend_box %||% TRUE),
+    tags$hr(),
+    h5("Panel & Background"),
+    selectInput("ui_panel_bg", "Panel background", 
+                choices = c("Default", "White", "Gray", "Transparent"),
+                selected = e$panel_bg %||% "Default"),
+    selectInput("ui_plot_bg", "Plot background", 
+                choices = c("Default", "White", "Gray", "Transparent"),
+                selected = e$plot_bg %||% "Default"),
+    tags$hr(),
+    h5("Grid Lines"),
+    checkboxInput("ui_grid_major", "Major grid lines", 
+                  value = e$grid_major %||% TRUE),
+    checkboxInput("ui_grid_minor", "Minor grid lines", 
+                  value = e$grid_minor %||% TRUE),
+    selectInput("ui_grid_color", "Grid color", 
+                choices = c("Default", "Gray", "Light gray", "Dark gray", "Black"),
+                selected = e$grid_color %||% "Default")
   )
 }
 
@@ -48,14 +76,58 @@ register_theme_observers <- function(input, rv, session) {
     rv$edits[[ap]]$legend_pos <- legend_pos_value(input$ui_legend_pos)
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
+  observeEvent(input$ui_legend_box, {
+    if (rv$is_hydrating) return()
+    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+    ensure_edits(rv, ap, grid = FALSE)
+    rv$edits[[ap]]$legend_box <- input$ui_legend_box
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  
+  observeEvent(input$ui_panel_bg, {
+    if (rv$is_hydrating) return()
+    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+    ensure_edits(rv, ap, grid = FALSE)
+    rv$edits[[ap]]$panel_bg <- input$ui_panel_bg
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  
+  observeEvent(input$ui_plot_bg, {
+    if (rv$is_hydrating) return()
+    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+    ensure_edits(rv, ap, grid = FALSE)
+    rv$edits[[ap]]$plot_bg <- input$ui_plot_bg
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  
+  observeEvent(input$ui_grid_major, {
+    if (rv$is_hydrating) return()
+    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+    ensure_edits(rv, ap, grid = FALSE)
+    rv$edits[[ap]]$grid_major <- input$ui_grid_major
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  
+  observeEvent(input$ui_grid_minor, {
+    if (rv$is_hydrating) return()
+    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+    ensure_edits(rv, ap, grid = FALSE)
+    rv$edits[[ap]]$grid_minor <- input$ui_grid_minor
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  
+  observeEvent(input$ui_grid_color, {
+    if (rv$is_hydrating) return()
+    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+    ensure_edits(rv, ap, grid = FALSE)
+    rv$edits[[ap]]$grid_color <- input$ui_grid_color
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  
   observeEvent(input$apply_all_theme, {
     ap <- rv$active_tab
     if (is.null(ap) || identical(ap,"Grid") || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
     src <- rv$edits[[ap]]
+    theme_fields <- c("theme","base_size","legend_pos","legend_box",
+                      "panel_bg","plot_bg","grid_major","grid_minor","grid_color")
     for (nm in names(rv$plots)) {
       ensure_edits(rv, nm, grid = FALSE)
-      rv$edits[[nm]][c("theme","base_size","legend_pos")] <- src[c("theme","base_size","legend_pos")]
+      rv$edits[[nm]][theme_fields] <- src[theme_fields]
     }
     showNotification("Theme settings applied to all plots.", type = "message")
   })

@@ -24,13 +24,51 @@ text_pane_ui <- function(rv) {
   }
   
   tagList(
-    actionButton("apply_all_text", "Use for all plots", class = "btn btn-sm btn-default"),
+    actionButton("apply_all_text", "Use for all plots", class = "btn btn-sm btn-default btn-block"),
+    tags$hr(),
     h4(sprintf("Text — %s", ap)),
+    tags$hr(),
+    h5("Labels"),
     textInput("ui_title",    "Title",    e$title    %||% get_lab("title")),
     textInput("ui_subtitle", "Subtitle", e$subtitle %||% get_lab("subtitle")),
     textInput("ui_caption",  "Caption",  e$caption  %||% get_lab("caption")),
     textInput("ui_xlab",     "X label",  e$xlab     %||% get_lab("x")),
-    textInput("ui_ylab",     "Y label",  e$ylab     %||% get_lab("y"))
+    textInput("ui_ylab",     "Y label",  e$ylab     %||% get_lab("y")),
+    tags$hr(),
+    h5("Text Sizes"),
+    sliderInput("ui_title_size", "Title size", 
+               value = e$title_size %||% BASE$title_size, 
+               min = 8, max = 24, step = 1),
+    sliderInput("ui_subtitle_size", "Subtitle size", 
+               value = e$subtitle_size %||% BASE$subtitle_size, 
+               min = 6, max = 20, step = 1),
+    sliderInput("ui_caption_size", "Caption size", 
+               value = e$caption_size %||% BASE$caption_size, 
+               min = 6, max = 18, step = 1),
+    sliderInput("ui_axis_title_size", "Axis title size", 
+               value = e$axis_title_size %||% BASE$axis_title_size, 
+               min = 8, max = 20, step = 1),
+    sliderInput("ui_axis_text_size", "Axis text size", 
+               value = e$axis_text_size %||% BASE$axis_text_size, 
+               min = 6, max = 18, step = 1),
+    sliderInput("ui_legend_title_size", "Legend title size", 
+               value = e$legend_title_size %||% BASE$legend_title_size, 
+               min = 8, max = 20, step = 1),
+    sliderInput("ui_legend_text_size", "Legend text size", 
+               value = e$legend_text_size %||% BASE$legend_text_size, 
+               min = 6, max = 18, step = 1),
+    tags$hr(),
+    h5("Axis Limits & Steps"),
+    numericInput("ui_x_min", "X axis min", value = e$x_min, step = 0.1),
+    numericInput("ui_x_max", "X axis max", value = e$x_max, step = 0.1),
+    numericInput("ui_y_min", "Y axis min", value = e$y_min, step = 0.1),
+    numericInput("ui_y_max", "Y axis max", value = e$y_max, step = 0.1),
+    tags$hr(),
+    h5("Axis Breaks"),
+    numericInput("ui_x_major", "X major breaks", value = e$x_major, min = 1, step = 1),
+    numericInput("ui_x_minor", "X minor breaks", value = e$x_minor, min = 0, step = 1),
+    numericInput("ui_y_major", "Y major breaks", value = e$y_major, min = 1, step = 1),
+    numericInput("ui_y_minor", "Y minor breaks", value = e$y_minor, min = 0, step = 1)
   )
 }
 
@@ -51,20 +89,46 @@ register_text_observers <- function(input, rv, session) {
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
   
+  # Basic text labels
   bind_edit("ui_title",    "title")
   bind_edit("ui_subtitle", "subtitle")
   bind_edit("ui_caption",  "caption")
   bind_edit("ui_xlab",     "xlab")
   bind_edit("ui_ylab",     "ylab")
   
+  # Text sizes
+  bind_edit("ui_title_size", "title_size")
+  bind_edit("ui_subtitle_size", "subtitle_size")
+  bind_edit("ui_caption_size", "caption_size")
+  bind_edit("ui_axis_title_size", "axis_title_size")
+  bind_edit("ui_axis_text_size", "axis_text_size")
+  bind_edit("ui_legend_title_size", "legend_title_size")
+  bind_edit("ui_legend_text_size", "legend_text_size")
+  
+  # Axis limits
+  bind_edit("ui_x_min", "x_min")
+  bind_edit("ui_x_max", "x_max")
+  bind_edit("ui_y_min", "y_min")
+  bind_edit("ui_y_max", "y_max")
+  
+  # Axis breaks
+  bind_edit("ui_x_major", "x_major")
+  bind_edit("ui_x_minor", "x_minor")
+  bind_edit("ui_y_major", "y_major")
+  bind_edit("ui_y_minor", "y_minor")
+  
   observeEvent(input$apply_all_text, {
     ap <- rv$active_tab
     if (is.null(ap) || identical(ap, "Grid") || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
     src <- rv$edits[[ap]]
+    text_fields <- c("title","subtitle","caption","xlab","ylab",
+                     "title_size","subtitle_size","caption_size",
+                     "axis_title_size","axis_text_size","legend_title_size","legend_text_size",
+                     "x_min","x_max","y_min","y_max","x_major","x_minor","y_major","y_minor")
     for (nm in names(rv$plots)) {
       ensure_edits(rv, nm, grid = FALSE)
-      rv$edits[[nm]][c("title","subtitle","caption","xlab","ylab")] <- src[c("title","subtitle","caption","xlab","ylab")]
+      rv$edits[[nm]][text_fields] <- src[text_fields]
     }
     showNotification("Text settings applied to all plots.", type = "message")
   })

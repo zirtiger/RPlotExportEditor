@@ -48,11 +48,22 @@ app_server <- function(input, output, session) {
   output$tabs_area <- renderUI({
     # Build a tabset with "Grid" + one tab per plot
     tabs <- list(
-      tabPanel("Grid", value = "Grid", plotOutput("grid_preview", height = "70vh"))
+      tabPanel("Grid", value = "Grid", 
+               div(
+                 style = "margin-bottom: 10px;",
+                 downloadButton("download_grid", "Download Grid", class = "btn btn-success")
+               ),
+               plotOutput("grid_preview", height = "65vh"))
     )
     for (nm in names(rv$plots)) {
       tabs[[length(tabs) + 1]] <- tabPanel(nm, value = nm,
-                                           plotOutput(paste0("plot_prev_", nm), height = "70vh"))
+                                           div(
+                                             style = "margin-bottom: 10px;",
+                                             downloadButton(paste0("download_plot_", nm), 
+                                                          paste("Download", nm), 
+                                                          class = "btn btn-success")
+                                           ),
+                                           plotOutput(paste0("plot_prev_", nm), height = "65vh"))
     }
     do.call(tabsetPanel, c(id = "main_tabs", tabs))
   })
@@ -95,14 +106,98 @@ app_server <- function(input, output, session) {
       theme(legend.position = legend_pos_value(rv$grid$legend %||% BASE$grid_legend_pos))
   })
   
+  # --- Download handlers ------------------------------------------------
+  # Grid download
+  output$download_grid <- downloadHandler(
+    filename = function() {
+      paste0("grid_plot.", tolower(rv$grid_export$format %||% BASE$format))
+    },
+    content = function(file) {
+      req(length(rv$plots) > 0)
+      r <- rv$grid$rows %||% BASE$grid_rows
+      c <- rv$grid$cols %||% BASE$grid_cols
+      n <- r * c
+      picked <- names(rv$plots)[seq_len(min(n, length(rv$plots)))]
+      
+      plots <- lapply(picked, function(nm) {
+        ensure_edits(rv, nm)
+        apply_edits(rv$plots[[nm]], rv$edits[[nm]])
+      })
+      
+      grid_plot <- patchwork::wrap_plots(plots, nrow = r, ncol = c,
+                                        guides = if (isTRUE(rv$grid$collect %||% BASE$grid_collect)) "collect" else "keep") +
+        theme(legend.position = legend_pos_value(rv$grid$legend %||% BASE$grid_legend_pos))
+      
+      export_plot(grid_plot, file, rv$grid_export)
+    }
+  )
+  
+  # Grid download from export pane
+  output$download_grid_export <- downloadHandler(
+    filename = function() {
+      paste0("grid_plot.", tolower(rv$grid_export$format %||% BASE$format))
+    },
+    content = function(file) {
+      req(length(rv$plots) > 0)
+      r <- rv$grid$rows %||% BASE$grid_rows
+      c <- rv$grid$cols %||% BASE$grid_cols
+      n <- r * c
+      picked <- names(rv$plots)[seq_len(min(n, length(rv$plots)))]
+      
+      plots <- lapply(picked, function(nm) {
+        ensure_edits(rv, nm)
+        apply_edits(rv$plots[[nm]], rv$edits[[nm]])
+      })
+      
+      grid_plot <- patchwork::wrap_plots(plots, nrow = r, ncol = c,
+                                        guides = if (isTRUE(rv$grid$collect %||% BASE$grid_collect)) "collect" else "keep") +
+        theme(legend.position = legend_pos_value(rv$grid$legend %||% BASE$grid_legend_pos))
+      
+      export_plot(grid_plot, file, rv$grid_export)
+    }
+  )
+  
+  # Individual plot downloads
+  observe({
+    lapply(names(rv$plots), function(nm) {
+      local({
+        name <- nm
+        output[[paste0("download_plot_", name)]] <- downloadHandler(
+          filename = function() {
+            paste0(name, ".", tolower(rv$export[[name]]$format %||% BASE$format))
+          },
+          content = function(file) {
+            req(!is.null(rv$plots[[name]]))
+            ensure_edits(rv, name)
+            plot_with_edits <- apply_edits(rv$plots[[name]], rv$edits[[name]])
+            export_plot(plot_with_edits, file, rv$export[[name]])
+          }
+        )
+        
+        # Export pane download button
+        output[[paste0("download_plot_export_", name)]] <- downloadHandler(
+          filename = function() {
+            paste0(name, ".", tolower(rv$export[[name]]$format %||% BASE$format))
+          },
+          content = function(file) {
+            req(!is.null(rv$plots[[name]]))
+            ensure_edits(rv, name)
+            plot_with_edits <- apply_edits(rv$plots[[name]], rv$edits[[name]])
+            export_plot(plot_with_edits, file, rv$export[[name]])
+          }
+        )
+      })
+    })
+  })
+  
   # --- Sidebar panes (render) ------------------------------------------
   output$subsidebar <- renderUI({
-    cur <- input$mainmenu %||% "text"
+    cur <- input$mainmenu %||% "grid"
     switch(cur,
-           text   = text_pane_ui(rv),
-           theme  = theme_pane_ui(rv),
            grid   = grid_pane_ui(rv),
            export = export_pane_ui(rv),
+           text   = text_pane_ui(rv),
+           theme  = theme_pane_ui(rv),
            div(helpText("Pick a section from the left."))
     )
   })
