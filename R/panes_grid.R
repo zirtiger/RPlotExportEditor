@@ -33,15 +33,7 @@ grid_pane_ui <- function(rv) {
     
     tags$hr(),
     h4("Assign plots to grid cells"),
-    do.call(tagList, rows_ui),
-    
-    tags$hr(),
-    h4("Export (grid only)"),
-    numericInput("ui_grid_width",  "Width (mm)",  value = rv$grid_export$width_mm  %||% BASE$width_mm,  min = 50, max = 2000, step = 10),
-    numericInput("ui_grid_height", "Height (mm)", value = rv$grid_export$height_mm %||% BASE$height_mm, min = 50, max = 2000, step = 10),
-    numericInput("ui_grid_dpi",    "DPI",         value = rv$grid_export$dpi       %||% BASE$dpi,       min = 72, max = 1200, step = 10),
-    selectInput("ui_grid_format",  "Format",      choices = c("PNG","TIFF","PDF","SVG","EPS"),
-                selected = rv$grid_export$format %||% BASE$format)
+    do.call(tagList, rows_ui)
   )
 }
 
@@ -76,10 +68,4 @@ register_grid_observers <- function(input, rv, session) {
       if (is.null(v)) rv$grid$cells[[k]] %||% "(empty)" else v
     })
   })
-  
-  # Grid export writers
-  observeEvent(input$ui_grid_width,  { rv$grid_export$width_mm  <- as_num_safe(input$ui_grid_width)  }, ignoreInit = TRUE, ignoreNULL = TRUE)
-  observeEvent(input$ui_grid_height, { rv$grid_export$height_mm <- as_num_safe(input$ui_grid_height) }, ignoreInit = TRUE, ignoreNULL = TRUE)
-  observeEvent(input$ui_grid_dpi,    { rv$grid_export$dpi       <- as_num_safe(input$ui_grid_dpi)    }, ignoreInit = TRUE, ignoreNULL = TRUE)
-  observeEvent(input$ui_grid_format, { rv$grid_export$format    <- input$ui_grid_format              }, ignoreInit = TRUE, ignoreNULL = TRUE)
 }

@@ -12,7 +12,16 @@ BASE <- list(
   grid_rows       = 1,
   grid_cols       = 2,
   grid_collect    = TRUE,
-  grid_legend_pos = "bottom"
+  grid_legend_pos = "bottom",
+  # axis defaults (NULL means inherit)
+  x_breaks_step   = NULL,
+  x_minor_breaks_step = NULL,
+  y_breaks_step   = NULL,
+  y_minor_breaks_step = NULL,
+  xlim_min        = NULL,
+  xlim_max        = NULL,
+  ylim_min        = NULL,
+  ylim_max        = NULL
 )
 
 # ---- Optional converters for vector → PNG preview --------------------

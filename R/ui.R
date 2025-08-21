@@ -7,10 +7,11 @@ app_ui <- function(request = NULL) {
   sidebar <- shinydashboard::dashboardSidebar(
     shinydashboard::sidebarMenu(
       id = "mainmenu",
-      shinydashboard::menuItem("Text",   tabName = "text",   icon = icon("font")),
-      shinydashboard::menuItem("Theme",  tabName = "theme",  icon = icon("paint-brush")),
       shinydashboard::menuItem("Grid",   tabName = "grid",   icon = icon("th")),
       shinydashboard::menuItem("Export", tabName = "export", icon = icon("download")),
+      shinydashboard::menuItem("Text",   tabName = "text",   icon = icon("font")),
+      shinydashboard::menuItem("Theme",  tabName = "theme",  icon = icon("paint-brush")),
+      shinydashboard::menuItem("Axes",   tabName = "axes",   icon = icon("ruler-combined")),
       hr(),
       fileInput("plots_rds", "Load ggplot (.rds, multiple)", accept = ".rds", multiple = TRUE),
       actionButton("load_demo", "Load 3 demo plots", class = "btn btn-link")
@@ -23,19 +24,24 @@ app_ui <- function(request = NULL) {
     if (file.exists("www/script.js")) includeScript("www/script.js"),
     
     fluidRow(
+      class = "row-fullheight",
       column(
         width = 4,
-        shinydashboard::box(
-          title = "Settings",
-          width = 12, status = "primary", solidHeader = TRUE,
-          uiOutput("subsidebar")   # pane content (Text/Theme/Grid/Export)
+        class = "col-fill side-controls",
+        div(
+          class = "pane-container",
+          uiOutput("subsidebar")   # pane content (Text/Theme/Grid/Export/Axes)
         )
       ),
       column(
         width = 8,
-        shinydashboard::box(
-          title = "Plots",
-          width = 12, status = "primary", solidHeader = TRUE,
+        class = "col-fill preview-area",
+        div(
+          class = "preview-toolbar",
+          uiOutput("preview_toolbar")
+        ),
+        div(
+          class = "preview-container",
           uiOutput("tabs_area")    # Grid + one tab per plot (previews)
         )
       )

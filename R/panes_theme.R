@@ -21,8 +21,16 @@ theme_pane_ui <- function(rv) {
     selectInput("ui_theme", "Theme",
                 choices = c("theme_minimal","theme_classic","theme_bw","theme_light","theme_gray"),
                 selected = e$theme %||% BASE$theme),
-    numericInput("ui_base_size", "Base text size", value = e$base_size %||% BASE$base_size, min = 6, max = 30, step = 1),
-    selectInput("ui_legend_pos", "Legend position", choices = LEGEND_POS, selected = e$legend_pos %||% BASE$legend_pos)
+    sliderInput("ui_base_size", "Base text size", value = e$base_size %||% BASE$base_size, min = 6, max = 30, step = 1),
+    selectInput("ui_legend_pos", "Legend position", choices = LEGEND_POS, selected = e$legend_pos %||% BASE$legend_pos),
+    tags$hr(),
+    h4("Text sizes"),
+    sliderInput("ui_plot_title_size",    "Plot title",     value = e$plot_title_size    %||% (e$base_size %||% BASE$base_size + 4), min = 6, max = 48, step = 1),
+    sliderInput("ui_plot_subtitle_size", "Plot subtitle",  value = e$plot_subtitle_size %||% (e$base_size %||% BASE$base_size + 2), min = 6, max = 48, step = 1),
+    sliderInput("ui_axis_title_size",    "Axis titles",    value = e$axis_title_size    %||% (e$base_size %||% BASE$base_size),     min = 6, max = 36, step = 1),
+    sliderInput("ui_axis_text_size",     "Axis text",      value = e$axis_text_size     %||% (e$base_size %||% BASE$base_size - 2), min = 6, max = 36, step = 1),
+    sliderInput("ui_legend_title_size",  "Legend title",   value = e$legend_title_size  %||% (e$base_size %||% BASE$base_size),     min = 6, max = 36, step = 1),
+    sliderInput("ui_legend_text_size",   "Legend text",    value = e$legend_text_size   %||% (e$base_size %||% BASE$base_size - 2), min = 6, max = 36, step = 1)
   )
 }
 
@@ -48,6 +56,22 @@ register_theme_observers <- function(input, rv, session) {
     rv$edits[[ap]]$legend_pos <- legend_pos_value(input$ui_legend_pos)
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
+  # Size observers
+  bind_size <- function(id, field) {
+    observeEvent(input[[id]], {
+      if (rv$is_hydrating) return()
+      ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+      ensure_edits(rv, ap, grid = FALSE)
+      rv$edits[[ap]][[field]] <- as_num_safe(input[[id]])
+    }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  }
+  bind_size("ui_plot_title_size",    "plot_title_size")
+  bind_size("ui_plot_subtitle_size", "plot_subtitle_size")
+  bind_size("ui_axis_title_size",    "axis_title_size")
+  bind_size("ui_axis_text_size",     "axis_text_size")
+  bind_size("ui_legend_title_size",  "legend_title_size")
+  bind_size("ui_legend_text_size",   "legend_text_size")
+  
   observeEvent(input$apply_all_theme, {
     ap <- rv$active_tab
     if (is.null(ap) || identical(ap,"Grid") || is.null(rv$plots[[ap]])) return()
@@ -55,7 +79,12 @@ register_theme_observers <- function(input, rv, session) {
     src <- rv$edits[[ap]]
     for (nm in names(rv$plots)) {
       ensure_edits(rv, nm, grid = FALSE)
-      rv$edits[[nm]][c("theme","base_size","legend_pos")] <- src[c("theme","base_size","legend_pos")]
+      rv$edits[[nm]][c("theme","base_size","legend_pos",
+                       "plot_title_size","plot_subtitle_size","axis_title_size","axis_text_size",
+                       "legend_title_size","legend_text_size")] <-
+        src[c("theme","base_size","legend_pos",
+              "plot_title_size","plot_subtitle_size","axis_title_size","axis_text_size",
+              "legend_title_size","legend_text_size")]
     }
     showNotification("Theme settings applied to all plots.", type = "message")
   })

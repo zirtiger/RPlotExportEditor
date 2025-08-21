@@ -1,0 +1,32 @@
+/* plot-editor/www/style.css */
+
+html, body, .content-wrapper, .right-side {
+	height: 100%;
+}
+
+.row-fullheight {
+	height: calc(100vh - 100px);
+	margin: 0;
+}
+
+.col-fill {
+	height: 100%;
+}
+
+.side-controls .pane-container, .preview-area .preview-container {
+	height: calc(100% - 40px);
+	overflow: auto;
+	padding-right: 8px;
+}
+
+.preview-area .preview-toolbar {
+	padding: 6px 0 6px 0;
+	border-bottom: 1px solid #eee;
+	margin-bottom: 6px;
+}
+
+/* Tighten inputs */
+.form-group { margin-bottom: 10px; }
+
+/* Greyed menu items */
+.sidebar-menu li.disabled > a { color: #aaa !important; pointer-events: none; }

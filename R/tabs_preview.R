@@ -41,26 +41,7 @@ register_preview_outputs <- function(output, rv) {
   # Grid preview: uses grid_export + grid_edits + selected cells
   output$grid_preview <- renderImage({
     req(length(rv$plots) > 0)
-    
-    r <- rv$grid$rows %||% BASE$grid_rows
-    c <- rv$grid$cols %||% BASE$grid_cols
-    idxs <- seq_len(r * c)
-    
-    # Which plots are placed?
-    cells <- rv$grid$cells %||% list()
-    picked <- Filter(function(x) !is.null(x) && x != "(empty)" && x %in% names(rv$plots), cells)
-    req(length(picked) > 0)
-    
-    # Apply GRID-specific edits (do not touch per-plot tabs)
-    plots <- lapply(picked, function(nm) {
-      ensure_edits(rv, nm, grid = TRUE)
-      apply_edits(rv$plots[[nm]], rv$grid_edits[[nm]])
-    })
-    
-    pw <- patchwork::wrap_plots(plots, nrow = r, ncol = c,
-                                guides = if (isTRUE(rv$grid$collect %||% BASE$grid_collect)) "collect" else "keep") +
-      ggplot2::theme(legend.position = legend_pos_value(rv$grid$legend %||% BASE$grid_legend_pos))
-    
+    pw <- build_grid_patchwork(rv)
     ex <- rv$grid_export
     render_preview_png(pw, ex$width_mm, ex$height_mm, ex$dpi, ex$format)
   }, deleteFile = TRUE)

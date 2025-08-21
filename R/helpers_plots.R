@@ -15,10 +15,54 @@ apply_edits <- function(p, edits) {
   tfun <- get_theme_fun(e$theme %||% BASE$theme)
   p <- p + tfun(base_size = e$base_size %||% BASE$base_size)
   
+  # element-level sizes if provided
+  theme_args <- list()
+  if (!is.null(e$plot_title_size))     theme_args$`plot.title`    <- ggplot2::element_text(size = e$plot_title_size)
+  if (!is.null(e$plot_subtitle_size))  theme_args$`plot.subtitle` <- ggplot2::element_text(size = e$plot_subtitle_size)
+  if (!is.null(e$axis_title_size))     theme_args$`axis.title`    <- ggplot2::element_text(size = e$axis_title_size)
+  if (!is.null(e$axis_text_size))      theme_args$`axis.text`     <- ggplot2::element_text(size = e$axis_text_size)
+  if (!is.null(e$legend_title_size))   theme_args$`legend.title`  <- ggplot2::element_text(size = e$legend_title_size)
+  if (!is.null(e$legend_text_size))    theme_args$`legend.text`   <- ggplot2::element_text(size = e$legend_text_size)
+  if (length(theme_args) > 0) {
+    p <- p + do.call(ggplot2::theme, theme_args)
+  }
+  
   # legend + grids
   p <- p + ggplot2::theme(
     legend.position = legend_pos_value(e$legend_pos %||% BASE$legend_pos)
   )
+  
+  # scales (limits and breaks)
+  make_breaks <- function(step) {
+    if (is.null(step)) ggplot2::waiver() else scales::breaks_width(step)
+  }
+  make_minor_breaks <- function(step) {
+    if (is.null(step)) ggplot2::waiver() else scales::minor_breaks_width(step)
+  }
+  x_limits <- NULL
+  y_limits <- NULL
+  if (!is.null(e$xlim_min) || !is.null(e$xlim_max)) x_limits <- c(e$xlim_min %||% NA_real_, e$xlim_max %||% NA_real_)
+  if (!is.null(e$ylim_min) || !is.null(e$ylim_max)) y_limits <- c(e$ylim_min %||% NA_real_, e$ylim_max %||% NA_real_)
+  
+  # Apply scales if user provided settings; ignore if discrete or errors
+  if (!is.null(x_limits) || !is.null(e$x_breaks_step) || !is.null(e$x_minor_breaks_step)) {
+    p <- tryCatch({
+      p + ggplot2::scale_x_continuous(
+        limits = x_limits,
+        breaks = make_breaks(e$x_breaks_step),
+        minor_breaks = make_minor_breaks(e$x_minor_breaks_step)
+      )
+    }, error = function(err) p)
+  }
+  if (!is.null(y_limits) || !is.null(e$y_breaks_step) || !is.null(e$y_minor_breaks_step)) {
+    p <- tryCatch({
+      p + ggplot2::scale_y_continuous(
+        limits = y_limits,
+        breaks = make_breaks(e$y_breaks_step),
+        minor_breaks = make_minor_breaks(e$y_minor_breaks_step)
+      )
+    }, error = function(err) p)
+  }
   
   p
 }
@@ -90,4 +134,20 @@ select_first_plot <- function(rv, session) {
     updateTabsetPanel(session, "active_tabset", selected = first_name)
     rv$active_tab <- first_name
   }
+}
+
+# Build grid patchwork object for grid preview/export
+build_grid_patchwork <- function(rv) {
+  r <- rv$grid$rows %||% BASE$grid_rows
+  c <- rv$grid$cols %||% BASE$grid_cols
+  cells <- rv$grid$cells %||% list()
+  picked <- Filter(function(x) !is.null(x) && x != "(empty)" && x %in% names(rv$plots), cells)
+  req(length(picked) > 0)
+  plots <- lapply(picked, function(nm) {
+    ensure_edits(rv, nm, grid = TRUE)
+    apply_edits(rv$plots[[nm]], rv$grid_edits[[nm]])
+  })
+  patchwork::wrap_plots(plots, nrow = r, ncol = c,
+                        guides = if (isTRUE(rv$grid$collect %||% BASE$grid_collect)) "collect" else "keep") +
+    ggplot2::theme(legend.position = legend_pos_value(rv$grid$legend %||% BASE$grid_legend_pos))
 }

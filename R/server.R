@@ -44,57 +44,6 @@ app_server <- function(input, output, session) {
     select_first_plot(rv, session)
   }, ignoreInit = TRUE)
   
-  # --- Tabs & previews -------------------------------------------------
-  output$tabs_area <- renderUI({
-    # Build a tabset with "Grid" + one tab per plot
-    tabs <- list(
-      tabPanel("Grid", value = "Grid", plotOutput("grid_preview", height = "70vh"))
-    )
-    for (nm in names(rv$plots)) {
-      tabs[[length(tabs) + 1]] <- tabPanel(nm, value = nm,
-                                           plotOutput(paste0("plot_prev_", nm), height = "70vh"))
-    }
-    do.call(tabsetPanel, c(id = "main_tabs", tabs))
-  })
-  
-  # Track the tabset created in tabs_previews.R (id = "active_tabset")
-  observeEvent(input$active_tabset, {
-    rv$active_tab <- input$active_tabset
-  }, ignoreInit = FALSE)
-  
-  # Per-plot previews
-  observe({
-    lapply(names(rv$plots), function(nm) {
-      local({
-        name <- nm
-        output[[paste0("plot_prev_", name)]] <- renderPlot({
-          req(!is.null(rv$plots[[name]]))
-          ensure_edits(rv, name)
-          apply_edits(rv$plots[[name]], rv$edits[[name]])
-        })
-      })
-    })
-  })
-  
-  # Grid preview (uses grid settings; lays out plots in order)
-  output$grid_preview <- renderPlot({
-    req(length(rv$plots) > 0)
-    r <- rv$grid$rows %||% BASE$grid_rows
-    c <- rv$grid$cols %||% BASE$grid_cols
-    n <- r * c
-    picked <- names(rv$plots)[seq_len(min(n, length(rv$plots)))]
-    req(length(picked) > 0)
-    
-    plots <- lapply(picked, function(nm) {
-      ensure_edits(rv, nm)
-      apply_edits(rv$plots[[nm]], rv$edits[[nm]])
-    })
-    
-    patchwork::wrap_plots(plots, nrow = r, ncol = c,
-                          guides = if (isTRUE(rv$grid$collect %||% BASE$grid_collect)) "collect" else "keep") +
-      theme(legend.position = legend_pos_value(rv$grid$legend %||% BASE$grid_legend_pos))
-  })
-  
   # --- Sidebar panes (render) ------------------------------------------
   output$subsidebar <- renderUI({
     cur <- input$mainmenu %||% "text"
@@ -103,15 +52,67 @@ app_server <- function(input, output, session) {
            theme  = theme_pane_ui(rv),
            grid   = grid_pane_ui(rv),
            export = export_pane_ui(rv),
+           axes   = axes_pane_ui(rv),
            div(helpText("Pick a section from the left."))
     )
   })
   
-  # --- Sidebar panes (observers) ---------------------------------------
+  # --- Tabs & previews (via tabs_preview.R) ----------------------------
   output$tabs_area  <- renderUI({ tabs_area_ui(rv) })
+  output$preview_toolbar <- renderUI({ toolbar_ui(rv) })
   register_preview_outputs(output, rv)
+  observe_tab_tracking(input, rv)
+  
+  # --- Pane observers ---------------------------------------------------
   register_grid_observers(input, rv, session)
   register_text_observers(input, rv, session)
   register_theme_observers(input, rv, session)
+  register_axes_observers(input, rv, session)
   register_export_observers(input, rv, session)
+  
+  # --- Downloads --------------------------------------------------------
+  # Active plot download (uses current active plot export settings)
+  output$dl_current_plot <- downloadHandler(
+    filename = function() {
+      ap <- rv$active_tab %||% "plot"
+      ex <- rv$export[[ap]] %||% list()
+      fmt <- toupper(ex$format %||% BASE$format)
+      ext <- switch(fmt, PNG = "png", TIFF = "tiff", PDF = "pdf", SVG = "svg", EPS = "eps", "png")
+      paste0(ap, ".", ext)
+    },
+    content = function(file) {
+      ap <- rv$active_tab
+      req(!is.null(ap), !identical(ap, "Grid"), !is.null(rv$plots[[ap]]))
+      ensure_edits(rv, ap, grid = FALSE)
+      p  <- apply_edits(rv$plots[[ap]], rv$edits[[ap]])
+      ex <- rv$export[[ap]] %||% list()
+      export_plot_file(
+        p, file,
+        fmt = toupper(ex$format %||% BASE$format),
+        width_mm  = ex$width_mm  %||% BASE$width_mm,
+        height_mm = ex$height_mm %||% BASE$height_mm,
+        dpi       = ex$dpi       %||% BASE$dpi
+      )
+    }
+  )
+  
+  # Grid download (uses grid_export + grid_edits + assigned cells)
+  output$dl_grid <- downloadHandler(
+    filename = function() {
+      fmt <- toupper(rv$grid_export$format %||% BASE$format)
+      ext <- switch(fmt, PNG = "png", TIFF = "tiff", PDF = "pdf", SVG = "svg", EPS = "eps", "png")
+      paste0("grid.", ext)
+    },
+    content = function(file) {
+      req(length(rv$plots) > 0)
+      pw <- build_grid_patchwork(rv)
+      export_plot_file(
+        pw, file,
+        fmt = toupper(rv$grid_export$format %||% BASE$format),
+        width_mm  = rv$grid_export$width_mm  %||% BASE$width_mm,
+        height_mm = rv$grid_export$height_mm %||% BASE$height_mm,
+        dpi       = rv$grid_export$dpi       %||% BASE$dpi
+      )
+    }
+  )
 }

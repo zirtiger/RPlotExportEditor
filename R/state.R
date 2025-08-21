@@ -51,7 +51,23 @@ ensure_edits <- function(rv, name, grid = FALSE) {
       ylab       = get_lab("y"),
       theme      = BASE$theme,
       base_size  = BASE$base_size,
-      legend_pos = BASE$legend_pos
+      legend_pos = BASE$legend_pos,
+      # sizes
+      plot_title_size    = NULL,
+      plot_subtitle_size = NULL,
+      axis_title_size    = NULL,
+      axis_text_size     = NULL,
+      legend_title_size  = NULL,
+      legend_text_size   = NULL,
+      # axis controls
+      xlim_min = BASE$xlim_min,
+      xlim_max = BASE$xlim_max,
+      ylim_min = BASE$ylim_min,
+      ylim_max = BASE$ylim_max,
+      x_breaks_step        = BASE$x_breaks_step,
+      x_minor_breaks_step  = BASE$x_minor_breaks_step,
+      y_breaks_step        = BASE$y_breaks_step,
+      y_minor_breaks_step  = BASE$y_minor_breaks_step
     )
   }
   
