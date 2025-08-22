@@ -43,25 +43,25 @@ text_pane_ui <- function(rv) {
       tabPanel("Text Sizes",
         sliderInput("ui_title_size", "Title size", 
                    value = e$title_size %||% BASE$title_size, 
-                   min = 8, max = 24, step = 1),
+                   min = 8, max = 34, step = 1),
         sliderInput("ui_subtitle_size", "Subtitle size", 
                    value = e$subtitle_size %||% BASE$subtitle_size, 
-                   min = 6, max = 20, step = 1),
+                   min = 6, max = 30, step = 1),
         sliderInput("ui_caption_size", "Caption size", 
                    value = e$caption_size %||% BASE$caption_size, 
-                   min = 6, max = 18, step = 1),
+                   min = 6, max = 28, step = 1),
         sliderInput("ui_axis_title_size", "Axis title size", 
                    value = e$axis_title_size %||% BASE$axis_title_size, 
-                   min = 8, max = 20, step = 1),
+                   min = 8, max = 30, step = 1),
         sliderInput("ui_axis_text_size", "Axis text size", 
                    value = e$axis_text_size %||% BASE$axis_text_size, 
-                   min = 6, max = 18, step = 1),
+                   min = 6, max = 28, step = 1),
         sliderInput("ui_legend_title_size", "Legend title size", 
                    value = e$legend_title_size %||% BASE$legend_title_size, 
-                   min = 8, max = 20, step = 1),
+                   min = 8, max = 30, step = 1),
         sliderInput("ui_legend_text_size", "Legend text size", 
                    value = e$legend_text_size %||% BASE$legend_text_size, 
-                   min = 6, max = 18, step = 1)
+                   min = 6, max = 28, step = 1)
       ),
       tabPanel("Axis",
         fluidRow(
@@ -73,13 +73,14 @@ text_pane_ui <- function(rv) {
           column(6, numericInput("ui_y_max", "Y max", value = e$y_max, step = 0.1))
         ),
         tags$hr(),
+        h5("Steps"),
         fluidRow(
-          column(6, numericInput("ui_x_major", "X major", value = e$x_major, min = 1, step = 1)),
-          column(6, numericInput("ui_x_minor", "X minor", value = e$x_minor, min = 0, step = 1))
+          column(6, numericInput("ui_x_step_minor", "X minor step", value = e$x_step_minor, min = 0, step = 0.1)),
+          column(6, numericInput("ui_x_step_major", "X major step", value = e$x_step_major, min = 0, step = 0.1))
         ),
         fluidRow(
-          column(6, numericInput("ui_y_major", "Y major", value = e$y_major, min = 1, step = 1)),
-          column(6, numericInput("ui_y_minor", "Y minor", value = e$y_minor, min = 0, step = 1))
+          column(6, numericInput("ui_y_step_minor", "Y minor step", value = e$y_step_minor, min = 0, step = 0.1)),
+          column(6, numericInput("ui_y_step_major", "Y major step", value = e$y_step_major, min = 0, step = 0.1))
         )
       )
     )
@@ -130,11 +131,11 @@ register_text_observers <- function(input, rv, session) {
   bind_edit("ui_y_min", "y_min")
   bind_edit("ui_y_max", "y_max")
   
-  # Axis breaks
-  bind_edit("ui_x_major", "x_major")
-  bind_edit("ui_x_minor", "x_minor")
-  bind_edit("ui_y_major", "y_major")
-  bind_edit("ui_y_minor", "y_minor")
+  # Axis steps
+  bind_edit("ui_x_step_minor", "x_step_minor")
+  bind_edit("ui_x_step_major", "x_step_major")
+  bind_edit("ui_y_step_minor", "y_step_minor")
+  bind_edit("ui_y_step_major", "y_step_major")
   
   observeEvent(input$apply_all_text, {
     ap <- rv$active_tab

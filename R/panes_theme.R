@@ -38,7 +38,7 @@ theme_pane_ui <- function(rv) {
 						choices = LEGEND_POS, 
 						selected = e$legend_pos %||% BASE$legend_pos),
 				checkboxInput("ui_legend_box", "Legend box", 
-							value = e$legend_box %||% TRUE)
+							value = isTRUE(e$legend_box))
 			),
 			tabPanel("Background",
 				selectInput("ui_panel_bg", "Panel background", 
@@ -50,12 +50,12 @@ theme_pane_ui <- function(rv) {
 			),
 			tabPanel("Grid",
 				checkboxInput("ui_grid_major", "Major grid lines", 
-							value = e$grid_major %||% TRUE),
+							value = isTRUE(e$grid_major)),
 				selectInput("ui_grid_major_linetype", "Major grid linetype",
 						choices = c("solid","dashed","dotted","dotdash","longdash","twodash"),
 						selected = e$grid_major_linetype %||% "solid"),
 				checkboxInput("ui_grid_minor", "Minor grid lines", 
-							value = e$grid_minor %||% TRUE),
+							value = isTRUE(e$grid_minor)),
 				selectInput("ui_grid_minor_linetype", "Minor grid linetype",
 						choices = c("solid","dashed","dotted","dotdash","longdash","twodash"),
 						selected = e$grid_minor_linetype %||% "dashed"),
