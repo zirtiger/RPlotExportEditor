@@ -20,27 +20,31 @@ theme_pane_ui <- function(rv) {
 	grid_minor_on <- isTRUE(e$grid_minor)
 	legend_box_on <- isTRUE(e$legend_box)
 	
-	# Detect discrete levels by inspecting mappings and data (avoid ggplot_build post-scale values)
+	# Detect discrete levels by inspecting mappings and data (evaluate aes on data)
 	extract_levels_from_plot <- function(p, aes_name) {
 		collect <- character(0)
-		get_var <- function(mapping) {
-			if (is.null(mapping) || is.null(mapping[[aes_name]])) return(NULL)
-			expr <- mapping[[aes_name]]
-			as.character(expr)
+		alt_aes <- if (identical(aes_name, "colour")) "color" else aes_name
+		get_expr <- function(mapping) {
+			if (is.null(mapping)) return(NULL)
+			if (!is.null(mapping[[aes_name]])) return(mapping[[aes_name]])
+			if (!is.null(mapping[[alt_aes]])) return(mapping[[alt_aes]])
+			NULL
 		}
-		append_levels <- function(dat, var) {
-			if (is.null(dat) || is.null(var) || is.null(dat[[var]])) return()
-			v <- dat[[var]]
-			if (is.factor(v)) collect <<- c(collect, as.character(levels(v))) else collect <<- c(collect, unique(as.character(v)))
+		append_vals <- function(dat, expr) {
+			if (is.null(expr) || is.null(dat)) return()
+			vals <- try(rlang::eval_tidy(expr, data = dat), silent = TRUE)
+			if (inherits(vals, "try-error") || is.null(vals)) return()
+			vals <- vals[!is.na(vals)]
+			if (is.factor(vals)) collect <<- c(collect, as.character(levels(vals))) else collect <<- c(collect, unique(as.character(vals)))
 		}
 		# plot-level
-		varp <- get_var(p$mapping)
-		append_levels(p$data, varp)
+		expr_p <- get_expr(p$mapping)
+		append_vals(p$data, expr_p)
 		# layers
 		if (!is.null(p$layers) && length(p$layers)) {
 			for (ly in p$layers) {
-				varl <- get_var(ly$mapping) %||% varp
-				append_levels(ly$data %||% p$data, varl)
+				expr_l <- get_expr(ly$mapping) %||% expr_p
+				append_vals(ly$data %||% p$data, expr_l)
 			}
 		}
 		unique(collect[nzchar(collect)])
