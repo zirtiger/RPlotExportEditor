@@ -96,12 +96,12 @@ app_server <- function(input, output, session) {
       Demo3 = ggplot(mpg, aes(displ, hwy, color = class)) +
         geom_point(alpha = 0.8) + theme_light(base_size = BASE$base_size) +
         labs(title = "Engine vs Hwy", subtitle = "Demo 3", x = "Displ", y = "Highway", color = "Class"),
-      Demo4 = ggplot(diamonds, aes(carat, price, color = depth)) +
-        geom_point(alpha = 0.6, size = 1.5) + 
+      Demo4 = ggplot(mtcars, aes(wt, mpg, color = qsec)) +
+        geom_point(alpha = 0.8, size = 2) + 
         scale_color_viridis_c(option = "plasma") +
         theme_classic(base_size = 14) +
-        labs(title = "Diamond pricing", subtitle = "Demo 4 - Continuous color",
-             x = "Carat", y = "Price ($)", color = "Depth", caption = "diamonds dataset"),
+        labs(title = "Fuel efficiency vs weight", subtitle = "Demo 4 - Continuous color",
+             x = "Weight (1000 lbs)", y = "MPG", color = "Quarter mile time", caption = "mtcars dataset"),
       Demo5 = ggplot(ChickWeight, aes(Time, weight, fill = Diet)) +
         geom_bar(stat = "summary", fun = "mean", position = "dodge") +
         scale_fill_brewer(palette = "Set2") +
