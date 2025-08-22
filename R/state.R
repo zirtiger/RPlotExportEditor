@@ -97,6 +97,28 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 		x_info <- get_axis_from_build("x")
 		y_info <- get_axis_from_build("y")
 		
+		# Snap limits to clean values using step or pretty()
+		snap_limits <- function(minv, maxv, step) {
+			if (is.finite(minv) && is.finite(maxv) && maxv > minv) {
+				if (is.finite(step) && step > 0) {
+					lo <- floor(minv / step) * step
+					hi <- ceiling(maxv / step) * step
+					c(lo, hi)
+				} else {
+					pr <- pretty(c(minv, maxv), n = 5)
+					range(pr)[1:2]
+				}
+			} else c(minv, maxv)
+		}
+		if (!is.null(x_info$min) && !is.null(x_info$max)) {
+			sx <- snap_limits(x_info$min, x_info$max, x_info$step_major %||% NA_real_)
+			x_info$min <- sx[1]; x_info$max <- sx[2]
+		}
+		if (!is.null(y_info$min) && !is.null(y_info$max)) {
+			sy <- snap_limits(y_info$min, y_info$max, y_info$step_major %||% NA_real_)
+			y_info$min <- sy[1]; y_info$max <- sy[2]
+		}
+		
 		# Theme-derived defaults
 		maj_el <- get_theme_elem("panel.grid.major")
 		min_el <- get_theme_elem("panel.grid.minor")
