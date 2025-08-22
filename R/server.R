@@ -26,19 +26,20 @@ app_server <- function(input, output, session) {
   })
   
   # Dynamic sidebar menu with disabled look + no click on inactive
-  output$sidebar_menu <- shinydashboard::renderSidebarMenu({
+  output$sidebar_menu <- shinydashboard::renderMenu({
     ma <- menu_activation()
-    disable_class <- function(active) if (isTRUE(active)) "" else " disabled-item"
-    shiny::tagList(
-      shinydashboard::sidebarMenu(id = "mainmenu",
-        shinydashboard::menuItem("Grid",   tabName = "grid",   icon = icon("th"),   class = disable_class(ma$grid)),
-        shinydashboard::menuItem("Export", tabName = "export", icon = icon("download"), class = disable_class(ma$export)),
-        shinydashboard::menuItem("Text",   tabName = "text",   icon = icon("font"), class = disable_class(ma$text)),
-        shinydashboard::menuItem("Theme",  tabName = "theme",  icon = icon("paint-brush"), class = disable_class(ma$theme)),
-        hr(),
-        fileInput("plots_rds", "Load ggplot (.rds, multiple)", accept = ".rds", multiple = TRUE),
-        actionButton("load_demo", "Load 3 demo plots", class = "btn btn-link")
-      )
+    add_disabled <- function(item, active) {
+      if (isTRUE(active)) return(item)
+      htmltools::tagAppendAttributes(item, class = "disabled-item")
+    }
+    shinydashboard::sidebarMenu(id = "mainmenu",
+      add_disabled(shinydashboard::menuItem("Grid",   tabName = "grid",   icon = icon("th")), ma$grid),
+      add_disabled(shinydashboard::menuItem("Export", tabName = "export", icon = icon("download")), ma$export),
+      add_disabled(shinydashboard::menuItem("Text",   tabName = "text",   icon = icon("font")), ma$text),
+      add_disabled(shinydashboard::menuItem("Theme",  tabName = "theme",  icon = icon("paint-brush")), ma$theme),
+      hr(),
+      fileInput("plots_rds", "Load ggplot (.rds, multiple)", accept = ".rds", multiple = TRUE),
+      actionButton("load_demo", "Load 3 demo plots", class = "btn btn-link")
     )
   })
   
