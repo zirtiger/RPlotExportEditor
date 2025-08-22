@@ -2,7 +2,7 @@
 # Top-level UI layout: header, sidebar, body with placeholders
 
 app_ui <- function(request = NULL) {
-  header <- shinydashboard::dashboardHeader(title = NULL)
+  header <- shinydashboard::dashboardHeader(disable = TRUE)
   
   sidebar <- shinydashboard::dashboardSidebar(
     width = 300,
