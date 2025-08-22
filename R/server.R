@@ -71,6 +71,7 @@ app_server <- function(input, output, session) {
   # Track the tabset created in tabs_previews.R (id = "active_tabset")
   observeEvent(input$active_tabset, {
     rv$active_tab <- input$active_tabset
+    session$sendCustomMessage("activeTabChanged", rv$active_tab)
   }, ignoreInit = FALSE)
   
   # Per-plot previews
