@@ -11,6 +11,7 @@ app_server <- function(input, output, session) {
   rv <- init_reactive_state()
   rv$active_tab  <- "Grid"
   rv$is_hydrating <- FALSE
+  rv$last_mainmenu <- "grid"
   
   # --- Menu item activation logic --------------------------------------
   # Determine which menu items should be active based on current context
@@ -43,7 +44,7 @@ app_server <- function(input, output, session) {
     )
   })
   
-  # Prevent navigation to disabled items
+  # Persist and guard mainmenu selection
   observeEvent(input$mainmenu, {
     ma <- menu_activation()
     blocked <- c(
@@ -52,11 +53,12 @@ app_server <- function(input, output, session) {
       if (!isTRUE(ma$theme))  "theme"  else NULL
     )
     if (!is.null(input$mainmenu) && input$mainmenu %in% blocked) {
-      # revert selection to Grid (or first allowed)
-      target <- if (isTRUE(ma$grid)) "grid" else names(Filter(isTRUE, ma))[1]
+      target <- rv$last_mainmenu %||% "grid"
       updateTabItems(session, "mainmenu", target)
+    } else if (!is.null(input$mainmenu)) {
+      rv$last_mainmenu <- input$mainmenu
     }
-  }, ignoreInit = TRUE)
+  }, ignoreInit = FALSE)
   
   # --- Demo loader & .rds loader --------------------------------------
   observeEvent(input$load_demo, {
@@ -74,6 +76,7 @@ app_server <- function(input, output, session) {
     )
     lapply(names(rv$plots), function(nm) ensure_edits(rv, nm))
     select_first_plot(rv, session)
+    isolate({ updateTabItems(session, "mainmenu", rv$last_mainmenu %||% "grid") })
   }, ignoreInit = TRUE)
   
   observeEvent(input$plots_rds, {
@@ -88,6 +91,7 @@ app_server <- function(input, output, session) {
       }
     }
     select_first_plot(rv, session)
+    isolate({ updateTabItems(session, "mainmenu", rv$last_mainmenu %||% "grid") })
   }, ignoreInit = TRUE)
   
   # --- Tabs & previews -------------------------------------------------

@@ -48,10 +48,25 @@ input[type="number"] { padding: 4px 6px; font-size: 12px; }
   margin: 0; /* rely on box-body padding */
 }
 
-/***** Disabled sidebar items *****/
+/***** Disabled sidebar items (stronger) *****/
 .sidebar-menu .disabled-item > a,
 .sidebar-menu .disabled-item > a:hover {
-  color: #aaa !important;
+  color: #8c8c8c !important; /* darker grey */
+  background: #f2f2f2 !important; /* pale background */
+  border-left-color: #f2f2f2 !important; /* no accent */
   pointer-events: none;
-  cursor: default;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/***** Muted controls (not currently effective) *****/
+.muted-control {
+  opacity: 0.5;
+}
+.muted-control .form-control,
+.muted-control .irs,
+.muted-control .checkbox,
+.muted-control .radio,
+.muted-control label {
+  pointer-events: auto; /* allow editing, just visually muted */
 }

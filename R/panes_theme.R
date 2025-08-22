@@ -15,6 +15,10 @@ theme_pane_ui <- function(rv) {
 	ensure_edits(rv, ap, grid = FALSE)
 	e <- rv$edits[[ap]]
 	
+	grid_major_on <- isTRUE(e$grid_major)
+	grid_minor_on <- isTRUE(e$grid_minor)
+	legend_box_on <- isTRUE(e$legend_box)
+	
 	tagList(
 		actionButton("apply_all_theme", "Use for all plots", class = "btn btn-sm btn-default btn-block"),
 		tags$hr(),
@@ -38,7 +42,9 @@ theme_pane_ui <- function(rv) {
 						choices = LEGEND_POS, 
 						selected = e$legend_pos %||% BASE$legend_pos),
 				checkboxInput("ui_legend_box", "Legend box", 
-							value = isTRUE(e$legend_box))
+							value = isTRUE(e$legend_box)),
+				div(class = if (legend_box_on) NULL else "muted-control",
+					p(class="help-block", "Legend box must be enabled for these settings to show."))
 			),
 			tabPanel("Background",
 				selectInput("ui_panel_bg", "Panel background", 
@@ -51,14 +57,16 @@ theme_pane_ui <- function(rv) {
 			tabPanel("Grid",
 				checkboxInput("ui_grid_major", "Major grid lines", 
 							value = isTRUE(e$grid_major)),
-				selectInput("ui_grid_major_linetype", "Major grid linetype",
-						choices = c("solid","dashed","dotted","dotdash","longdash","twodash"),
-						selected = e$grid_major_linetype %||% "solid"),
+				div(class = if (grid_major_on) NULL else "muted-control",
+					selectInput("ui_grid_major_linetype", "Major grid linetype",
+							choices = c("solid","dashed","dotted","dotdash","longdash","twodash"),
+							selected = e$grid_major_linetype %||% "solid")),
 				checkboxInput("ui_grid_minor", "Minor grid lines", 
 							value = isTRUE(e$grid_minor)),
-				selectInput("ui_grid_minor_linetype", "Minor grid linetype",
-						choices = c("solid","dashed","dotted","dotdash","longdash","twodash"),
-						selected = e$grid_minor_linetype %||% "dashed"),
+				div(class = if (grid_minor_on) NULL else "muted-control",
+					selectInput("ui_grid_minor_linetype", "Minor grid linetype",
+							choices = c("solid","dashed","dotted","dotdash","longdash","twodash"),
+							selected = e$grid_minor_linetype %||% "dashed")),
 				selectInput("ui_grid_color", "Grid color", 
 						choices = c("Default", "Gray", "Light gray", "Dark gray", "Black"),
 						selected = e$grid_color %||% "Default")

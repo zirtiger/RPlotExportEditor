@@ -23,6 +23,10 @@ text_pane_ui <- function(rv) {
     if (is.null(val)) "" else as.character(val)
   }
   
+  title_now    <- e$title    %||% get_lab("title")
+  subtitle_now <- e$subtitle %||% get_lab("subtitle")
+  caption_now  <- e$caption  %||% get_lab("caption")
+  
   tagList(
     actionButton("apply_all_text", "Use for all plots", class = "btn btn-sm btn-default btn-block"),
     tags$hr(),
@@ -34,9 +38,9 @@ text_pane_ui <- function(rv) {
       id = "text_tabs",
       selected = rv$tabs$text %||% "Labels",
       tabPanel("Labels", 
-        textInput("ui_title",    "Title",    e$title    %||% get_lab("title")),
-        textInput("ui_subtitle", "Subtitle", e$subtitle %||% get_lab("subtitle")),
-        textInput("ui_caption",  "Caption",  e$caption  %||% get_lab("caption")),
+        textInput("ui_title",    "Title",    title_now),
+        textInput("ui_subtitle", "Subtitle", subtitle_now),
+        textInput("ui_caption",  "Caption",  caption_now),
         textInput("ui_xlab",     "X label",  e$xlab     %||% get_lab("x")),
         textInput("ui_ylab",     "Y label",  e$ylab     %||% get_lab("y"))
       ),
@@ -44,15 +48,18 @@ text_pane_ui <- function(rv) {
         sliderInput("ui_title_size", "Title size", 
                    value = e$title_size %||% BASE$title_size, 
                    min = 8, max = 34, step = 1),
-        sliderInput("ui_subtitle_size", "Subtitle size", 
-                   value = e$subtitle_size %||% BASE$subtitle_size, 
-                   min = 6, max = 30, step = 1),
-        sliderInput("ui_caption_size", "Caption size", 
-                   value = e$caption_size %||% BASE$caption_size, 
-                   min = 6, max = 28, step = 1),
-        sliderInput("ui_axis_title_size", "Axis title size", 
-                   value = e$axis_title_size %||% BASE$axis_title_size, 
-                   min = 8, max = 30, step = 1),
+        div(class = if (nzchar(title_now)) NULL else "muted-control",
+            sliderInput("ui_subtitle_size", "Subtitle size", 
+                       value = e$subtitle_size %||% BASE$subtitle_size, 
+                       min = 6, max = 30, step = 1)),
+        div(class = if (nzchar(subtitle_now)) NULL else "muted-control",
+            sliderInput("ui_caption_size", "Caption size", 
+                       value = e$caption_size %||% BASE$caption_size, 
+                       min = 6, max = 28, step = 1)),
+        div(class = if (nzchar(caption_now)) NULL else "muted-control",
+            sliderInput("ui_axis_title_size", "Axis title size", 
+                       value = e$axis_title_size %||% BASE$axis_title_size, 
+                       min = 8, max = 30, step = 1)),
         sliderInput("ui_axis_text_size", "Axis text size", 
                    value = e$axis_text_size %||% BASE$axis_text_size, 
                    min = 6, max = 28, step = 1),
