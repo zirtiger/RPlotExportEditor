@@ -262,31 +262,69 @@ register_theme_observers <- function(input, rv, session) {
 		}
 	}, ignoreInit = TRUE)
 	
-	# Dynamic level color pickers with debouncing
+	# Dynamic level color pickers with focus/blur detection
 	observe({
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
 		e <- rv$edits[[ap]]
+		
+		# Create observers that store colors temporarily and apply on blur
 		if (!is.null(e$colour_levels) && length(e$colour_levels)) {
 			lapply(seq_along(e$colour_levels), function(i) {
-				# Create debounced observer for each color picker
-				debounced_input <- debounce(reactive(input[[paste0("ui_col_level_", i)]]), 1000)
-				observeEvent(debounced_input(), {
+				# Store the color temporarily when it changes
+				observeEvent(input[[paste0("ui_col_level_", i)]], {
 					if (rv$is_hydrating) return()
-					rv$edits[[ap]]$colour_levels_cols[i] <- debounced_input()
+					# Store in temporary variable, don't update edits yet
+					rv$temp_colour_storage <- rv$temp_colour_storage %||% list()
+					rv$temp_colour_storage[[i]] <- input[[paste0("ui_col_level_", i)]]
 				}, ignoreInit = TRUE, ignoreNULL = TRUE)
 			})
 		}
+		
 		if (!is.null(e$fill_levels) && length(e$fill_levels)) {
 			lapply(seq_along(e$fill_levels), function(i) {
-				# Create debounced observer for each fill picker
-				debounced_input <- debounce(reactive(input[[paste0("ui_fill_level_", i)]]), 1000)
-				observeEvent(debounced_input(), {
+				# Store the color temporarily when it changes
+				observeEvent(input[[paste0("ui_fill_level_", i)]], {
 					if (rv$is_hydrating) return()
-					rv$edits[[ap]]$fill_levels_cols[i] <- debounced_input()
+					# Store in temporary variable, don't update edits yet
+					rv$temp_fill_storage <- rv$temp_fill_storage %||% list()
+					rv$temp_fill_storage[[i]] <- input[[paste0("ui_fill_level_", i)]]
 				}, ignoreInit = TRUE, ignoreNULL = TRUE)
 			})
 		}
 	})
+	
+	# Apply stored colors when inputs lose focus (using a timer to detect when user is done)
+	observe({
+		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+		
+		# Apply stored colour changes after a short delay
+		if (!is.null(rv$temp_colour_storage) && length(rv$temp_colour_storage) > 0) {
+			e <- rv$edits[[ap]]
+			if (!is.null(e$colour_levels) && length(e$colour_levels)) {
+				for (i in seq_along(e$colour_levels)) {
+					if (!is.null(rv$temp_colour_storage[[i]])) {
+						rv$edits[[ap]]$colour_levels_cols[i] <- rv$temp_colour_storage[[i]]
+					}
+				}
+			}
+			rv$temp_colour_storage <- NULL
+		}
+		
+		# Apply stored fill changes after a short delay
+		if (!is.null(rv$temp_fill_storage) && length(rv$temp_fill_storage) > 0) {
+			e <- rv$edits[[ap]]
+			if (!is.null(e$fill_levels) && length(e$fill_levels)) {
+				for (i in seq_along(e$fill_levels)) {
+					if (!is.null(rv$temp_fill_storage[[i]])) {
+						rv$edits[[ap]]$fill_levels_cols[i] <- rv$temp_fill_storage[[i]]
+					}
+				}
+			}
+			rv$temp_fill_storage <- NULL
+		}
+	})
+	
+
 	
 	# Persist selected sub-tab
 	observeEvent(input$theme_tabs, {
