@@ -251,14 +251,14 @@ register_theme_observers <- function(input, rv, session) {
 			viridisLite::viridis(n, option = if (pal == "None") "viridis" else pal)
 		}
 		colour_lvls <- get_levels(pobj, "colour"); if (length(colour_lvls)) {
-			clrs <- cols(length(colour_lvls)); names(clrs) <- colour_lvls
+			clrs <- cols(length(colour_lvls))
 			rv$edits[[ap]]$colour_levels <- colour_lvls
-			rv$edits[[ap]]$colour_levels_cols <- unname(clrs)
+			rv$edits[[ap]]$colour_levels_cols <- clrs
 		}
 		fill_lvls <- get_levels(pobj, "fill"); if (length(fill_lvls)) {
-			clrs <- cols(length(fill_lvls)); names(clrs) <- fill_lvls
+			clrs <- cols(length(fill_lvls))
 			rv$edits[[ap]]$fill_levels <- fill_lvls
-			rv$edits[[ap]]$fill_levels_cols <- unname(clrs)
+			rv$edits[[ap]]$fill_levels_cols <- clrs
 		}
 	}, ignoreInit = TRUE)
 	
