@@ -26,6 +26,8 @@ text_pane_ui <- function(rv) {
   title_now    <- e$title    %||% get_lab("title")
   subtitle_now <- e$subtitle %||% get_lab("subtitle")
   caption_now  <- e$caption  %||% get_lab("caption")
+  xlab_now     <- e$xlab     %||% get_lab("x")
+  ylab_now     <- e$ylab     %||% get_lab("y")
   
   grid_major_on <- isTRUE(e$grid_major)
   grid_minor_on <- isTRUE(e$grid_minor)
@@ -44,22 +46,20 @@ text_pane_ui <- function(rv) {
         textInput("ui_title",    "Title",    title_now),
         textInput("ui_subtitle", "Subtitle", subtitle_now),
         textInput("ui_caption",  "Caption",  caption_now),
-        textInput("ui_xlab",     "X label",  e$xlab     %||% get_lab("x")),
-        textInput("ui_ylab",     "Y label",  e$ylab     %||% get_lab("y"))
+        textInput("ui_xlab",     "X label",  xlab_now),
+        textInput("ui_ylab",     "Y label",  ylab_now)
       ),
       tabPanel("Text Sizes",
         sliderInput("ui_title_size", "Title size", 
                    value = e$title_size %||% BASE$title_size, 
                    min = 8, max = 34, step = 1),
-        div(class = if (nzchar(title_now)) NULL else "muted-control",
-            sliderInput("ui_subtitle_size", "Subtitle size", 
-                       value = e$subtitle_size %||% BASE$subtitle_size, 
-                       min = 6, max = 30, step = 1)),
-        div(class = if (nzchar(subtitle_now)) NULL else "muted-control",
-            sliderInput("ui_caption_size", "Caption size", 
-                       value = e$caption_size %||% BASE$caption_size, 
-                       min = 6, max = 28, step = 1)),
-        div(class = if (nzchar(caption_now)) NULL else "muted-control",
+        sliderInput("ui_subtitle_size", "Subtitle size", 
+                   value = e$subtitle_size %||% BASE$subtitle_size, 
+                   min = 6, max = 30, step = 1),
+        sliderInput("ui_caption_size", "Caption size", 
+                   value = e$caption_size %||% BASE$caption_size, 
+                   min = 6, max = 28, step = 1),
+        div(class = if (nzchar(xlab_now) || nzchar(ylab_now)) NULL else "muted-control",
             sliderInput("ui_axis_title_size", "Axis title size", 
                        value = e$axis_title_size %||% BASE$axis_title_size, 
                        min = 8, max = 30, step = 1)),
@@ -84,18 +84,16 @@ text_pane_ui <- function(rv) {
         ),
         tags$hr(),
         h5("Steps"),
-        div(class = if (grid_major_on) NULL else "muted-control",
-            fluidRow(
-              column(6, numericInput("ui_x_step_major", "X major", value = e$x_step_major, min = 0, step = 0.1)),
-              column(6, numericInput("ui_y_step_major", "Y major", value = e$y_step_major, min = 0, step = 0.1))
-            )
+        fluidRow(
+          column(6, numericInput("ui_x_step_major", "X major", value = e$x_step_major, min = 0, step = 0.1)),
+          column(6, numericInput("ui_y_step_major", "Y major", value = e$y_step_major, min = 0, step = 0.1))
         ),
-        div(class = if (grid_minor_on) NULL else "muted-control",
-            fluidRow(
-              column(6, numericInput("ui_x_step_minor", "X minor", value = e$x_step_minor, min = 0, step = 0.1)),
-              column(6, numericInput("ui_y_step_minor", "Y minor", value = e$y_step_minor, min = 0, step = 0.1))
-            )
-        )
+        fluidRow(
+          column(6, numericInput("ui_x_step_minor", "X minor", value = e$x_step_minor, min = 0, step = 0.1)),
+          column(6, numericInput("ui_y_step_minor", "Y minor", value = e$y_step_minor, min = 0, step = 0.1))
+        ),
+        if (!grid_major_on) tags$small(style="color:#777;", "Major grid lines are off."),
+        if (!grid_minor_on) tags$small(style="color:#777; display:block;", "Minor grid lines are off.")
       )
     )
   )

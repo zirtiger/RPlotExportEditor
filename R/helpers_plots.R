@@ -15,6 +15,44 @@ apply_edits <- function(p, edits) {
   tfun <- get_theme_fun(e$theme %||% BASE$theme)
   p <- p + tfun(base_size = e$base_size %||% BASE$base_size)
   
+  # Palette / manual colors (safe application)
+  apply_palette <- function(p) {
+    pal <- e$palette %||% "None"
+    man <- e$manual_colors %||% ""
+    try_apply <- function(expr, p) { tryCatch({ expr }, error = function(...) p) }
+    
+    # manual colors override palette when provided
+    if (nzchar(man)) {
+      cols <- trimws(strsplit(man, ",")[[1]])
+      cols <- cols[nzchar(cols)]
+      if (length(cols) > 0) {
+        p <- try_apply(p + ggplot2::scale_color_manual(values = cols), p)
+        p <- try_apply(p + ggplot2::scale_fill_manual(values = cols), p)
+        return(p)
+      }
+    }
+    
+    if (!identical(pal, "None")) {
+      if (!requireNamespace("viridis", quietly = TRUE)) return(p)
+      vir_fun <- switch(pal,
+                        viridis = viridis::viridis,
+                        magma   = viridis::magma,
+                        plasma  = viridis::plasma,
+                        inferno = viridis::inferno,
+                        cividis = viridis::cividis,
+                        NULL)
+      if (!is.null(vir_fun)) {
+        # Apply for continuous and discrete safely
+        p <- try_apply(p + ggplot2::scale_color_viridis_d(option = pal), p)
+        p <- try_apply(p + ggplot2::scale_fill_viridis_d(option = pal), p)
+        p <- try_apply(p + ggplot2::scale_color_viridis_c(option = pal), p)
+        p <- try_apply(p + ggplot2::scale_fill_viridis_c(option = pal), p)
+      }
+    }
+    p
+  }
+  p <- apply_palette(p)
+  
   # Custom text sizes
   text_theme <- ggplot2::theme()
   

@@ -70,6 +70,12 @@ theme_pane_ui <- function(rv) {
 				selectInput("ui_grid_color", "Grid color", 
 						choices = c("Default", "Gray", "Light gray", "Dark gray", "Black"),
 						selected = e$grid_color %||% "Default")
+			),
+			tabPanel("Colors",
+				selectInput("ui_palette", "Palette", 
+						choices = c("None","viridis","magma","plasma","inferno","cividis"),
+						selected = e$palette %||% "None"),
+				textInput("ui_manual_colors", "Manual colors (comma-separated)", value = e$manual_colors %||% "")
 			)
 		)
 	)
@@ -151,6 +157,21 @@ register_theme_observers <- function(input, rv, session) {
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$grid_minor_linetype <- input$ui_grid_minor_linetype
+	}, ignoreInit = TRUE, ignoreNULL = TRUE)
+	
+	# Colors tab
+	observeEvent(input$ui_palette, {
+		if (rv$is_hydrating) return()
+		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+		ensure_edits(rv, ap, grid = FALSE)
+		rv$edits[[ap]]$palette <- input$ui_palette
+	}, ignoreInit = TRUE, ignoreNULL = TRUE)
+	
+	observeEvent(input$ui_manual_colors, {
+		if (rv$is_hydrating) return()
+		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+		ensure_edits(rv, ap, grid = FALSE)
+		rv$edits[[ap]]$manual_colors <- input$ui_manual_colors
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	# Persist selected sub-tab

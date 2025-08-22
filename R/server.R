@@ -32,8 +32,8 @@ app_server <- function(input, output, session) {
       if (isTRUE(active)) return(item)
       htmltools::tagAppendAttributes(item, class = "disabled-item")
     }
-    items <- list(
-      if (isTRUE(ma$grid)) add_disabled(shinydashboard::menuItem("Grid",   tabName = "grid",   icon = icon("th")), ma$grid),
+    shinydashboard::sidebarMenu(id = "mainmenu",
+      add_disabled(shinydashboard::menuItem("Grid",   tabName = "grid",   icon = icon("th")), ma$grid),
       add_disabled(shinydashboard::menuItem("Export", tabName = "export", icon = icon("download")), ma$export),
       add_disabled(shinydashboard::menuItem("Text",   tabName = "text",   icon = icon("font")), ma$text),
       add_disabled(shinydashboard::menuItem("Theme",  tabName = "theme",  icon = icon("paint-brush")), ma$theme),
@@ -41,7 +41,6 @@ app_server <- function(input, output, session) {
       fileInput("plots_rds", "Load ggplot (.rds, multiple)", accept = ".rds", multiple = TRUE),
       actionButton("load_demo", "Load 3 demo plots", class = "btn btn-link")
     )
-    do.call(shinydashboard::sidebarMenu, c(list(id = "mainmenu"), items))
   })
   
   # Persist and guard mainmenu selection
@@ -57,7 +56,7 @@ app_server <- function(input, output, session) {
       # choose best allowed target
       allowed <- names(Filter(isTRUE, ma))
       pref <- rv$last_mainmenu
-      target <- if (!is.null(pref) && pref %in% allowed) pref else if (length(allowed)) allowed[[1]] else "grid"
+      target <- if (!is.null(pref) && pref %in% allowed) pref else if (length(allowed)) allowed[[1]] else "text"
       updateTabItems(session, "mainmenu", target)
     } else if (!is.null(input$mainmenu)) {
       rv$last_mainmenu <- input$mainmenu
