@@ -37,6 +37,13 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 	# If this is a plot (not grid), ensure we have the original values
 	if (!grid && !is.null(rv$plots[[name]])) {
 		p <- rv$plots[[name]]
+		
+		# Helper functions - define these first
+		get_theme_elem <- function(elem) {
+			tryCatch(p$theme[[elem]], error = function(...) NULL)
+		}
+		is_blank <- function(x) inherits(x, "element_blank")
+		
 		if (length(rv[[orig_bucket]][[name]]) == 0) { # Only extract originals once
 			
 			# Debug: Print what we're extracting
@@ -75,12 +82,6 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 			maj_el <- get_theme_elem("panel.grid.major")
 			min_el <- get_theme_elem("panel.grid.minor")
 			lbox   <- get_theme_elem("legend.box.background")
-			
-			# Helper functions
-			get_theme_elem <- function(elem) {
-				tryCatch(p$theme[[elem]], error = function(...) NULL)
-			}
-			is_blank <- function(x) inherits(x, "element_blank")
 			
 			# Helper function to extract levels from plot
 			extract_levels_from_plot <- function(p, aes_name) {
