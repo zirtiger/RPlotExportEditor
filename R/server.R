@@ -74,13 +74,11 @@ app_server <- function(input, output, session) {
       # For plot tabs, ensure we have fresh edits for this specific plot
       ensure_edits(rv, rv$active_tab, grid = FALSE)
       
-      # Force UI update to prevent inheritance issues
-      # This ensures input values are synchronized before observers run
-      rv$force_ui_update <- rv$force_ui_update + 1
-      
       updateTabItems(session, "mainmenu", rv$last_mainmenu %||% "text")
     }
   }, ignoreInit = FALSE)
+  
+  
   
   # --- Demo loader & .rds loader --------------------------------------
   observeEvent(input$load_demo, {

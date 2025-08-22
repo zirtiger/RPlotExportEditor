@@ -127,46 +127,46 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				xlab       = get_lab("x"),
 				ylab       = get_lab("y"),
 				
-				# Theme
+				# Theme - only set essential defaults
 				theme      = BASE$theme,
 				base_size  = BASE$base_size,
 				legend_pos = BASE$legend_pos,
 				legend_box = if (!is.null(lbox)) !is_blank(lbox) else NULL,
-				panel_bg   = NULL,
-				plot_bg    = NULL,
+				panel_bg   = NULL,  # Keep as NULL - optional setting
+				plot_bg    = NULL,  # Keep as NULL - optional setting
 				
-				# Grid
+				# Grid - only set if actually present in plot
 				grid_major = if (!is.null(maj_el)) !is_blank(maj_el) else NULL,
 				grid_minor = if (!is.null(min_el)) !is_blank(min_el) else NULL,
-				grid_major_linetype = tryCatch(maj_el$linetype, error = function(...) NULL),
-				grid_minor_linetype = tryCatch(min_el$linetype, error = function(...) NULL),
-				grid_color = NULL,
+				grid_major_linetype = if (!is.null(maj_el)) tryCatch(maj_el$linetype, error = function(...) NULL) else NULL,
+				grid_minor_linetype = if (!is.null(min_el)) tryCatch(min_el$linetype, error = function(...) NULL) else NULL,
+				grid_color = NULL,  # Keep as NULL - optional setting
 				
-				# Axis limits
+				# Axis limits - only set if actually present in plot
 				x_min      = x_info$min,
 				x_max      = x_info$max,
 				y_min      = y_info$min,
 				y_max      = y_info$max,
 				
-				# Step suggestions
+				# Step suggestions - only set if actually present in plot
 				x_step_major = x_info$step_major,
 				x_step_minor = x_info$step_minor,
 				y_step_major = y_info$step_major,
 				y_step_minor = y_info$step_minor,
 				
-				# Colors
-				palette = "None",
+				# Colors - keep as NULL until explicitly set
+				palette = NULL,
 				continuous_colour_palette = NULL,
 				continuous_fill_palette = NULL,
 				
-				# Text sizes
-				title_size = NULL,
-				subtitle_size = NULL,
-				caption_size = NULL,
-				axis_title_size = NULL,
-				axis_text_size = NULL,
-				legend_title_size = NULL,
-				legend_text_size = NULL
+				# Text sizes - only set essential defaults, keep optional as NULL
+				title_size = NULL,      # Optional - only if user sets it
+				subtitle_size = NULL,   # Optional - only if user sets it
+				caption_size = NULL,    # Optional - only if user sets it
+				axis_title_size = NULL, # Optional - only if user sets it
+				axis_text_size = NULL,  # Optional - only if user sets it
+				legend_title_size = NULL, # Optional - only if user sets it
+				legend_text_size = NULL   # Optional - only if user sets it
 			)
 			
 			# Extract original color levels and colors
@@ -289,10 +289,8 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 			}
 		}
 		
-		# Initialize edits with original values (if edits are empty)
-		if (length(rv[[bucket]][[name]]) == 0) {
-			rv[[bucket]][[name]] <- rv[[orig_bucket]][[name]]
-		}
+		# Don't automatically initialize edits - let the UI load from originals
+		# Edits will only be populated when user actually makes changes
 	}
 	
 	if (!grid && is.null(rv$export[[name]])) {
@@ -307,13 +305,13 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 
 # Helper function to get current value for any setting
 get_current_value <- function(rv, plot_name, setting_name, default_value = NULL) {
-	# Check edited values first
-	if (!is.null(rv$edits[[plot_name]][[setting_name]])) {
+	# Check edited values first (only if they actually exist)
+	if (!is.null(rv$edits[[plot_name]]) && !is.null(rv$edits[[plot_name]][[setting_name]])) {
 		return(rv$edits[[plot_name]][[setting_name]])
 	}
 	
 	# Fall back to original values
-	if (!is.null(rv$originals[[plot_name]][[setting_name]])) {
+	if (!is.null(rv$originals[[plot_name]]) && !is.null(rv$originals[[plot_name]][[setting_name]])) {
 		return(rv$originals[[plot_name]][[setting_name]])
 	}
 	

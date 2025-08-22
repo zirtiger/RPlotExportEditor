@@ -175,75 +175,85 @@ register_theme_observers <- function(input, rv, session) {
 	observeEvent(input$ui_theme, {
 		if (rv$is_hydrating) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$theme <- input$ui_theme
+		
+		# Only update if the value is actually different
+		current_val <- get_current_value(rv, ap, "theme", BASE$theme)
+		if (input$ui_theme != current_val) {
+			ensure_edits(rv, ap, grid = FALSE)
+			rv$edits[[ap]]$theme <- input$ui_theme
+		}
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_base_size, {
 		if (rv$is_hydrating) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$base_size <- as_num_safe(input$ui_base_size)
+		
+		# Only update if the value is actually different
+		current_val <- get_current_value(rv, ap, "base_size", BASE$base_size)
+		if (input$ui_base_size != current_val) {
+			ensure_edits(rv, ap, grid = FALSE)
+			rv$edits[[ap]]$base_size <- as_num_safe(input$ui_base_size)
+		}
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_legend_pos, {
-		if (rv$is_hydrating) return()
+		if (rv$is_hydrating || rv$force_ui_update > 0) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$legend_pos <- legend_pos_value(input$ui_legend_pos)
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_legend_box, {
-		if (rv$is_hydrating) return()
+		if (rv$is_hydrating || rv$force_ui_update > 0) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$legend_box <- input$ui_legend_box
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_panel_bg, {
-		if (rv$is_hydrating) return()
+		if (rv$is_hydrating || rv$force_ui_update > 0) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$panel_bg <- input$ui_panel_bg
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_plot_bg, {
-		if (rv$is_hydrating) return()
+		if (rv$is_hydrating || rv$force_ui_update > 0) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$plot_bg <- input$ui_plot_bg
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_grid_major, {
-		if (rv$is_hydrating) return()
+		if (rv$is_hydrating || rv$force_ui_update > 0) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$grid_major <- input$ui_grid_major
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_grid_minor, {
-		if (rv$is_hydrating) return()
+		if (rv$is_hydrating || rv$force_ui_update > 0) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$grid_minor <- input$ui_grid_minor
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_grid_color, {
-		if (rv$is_hydrating) return()
+		if (rv$is_hydrating || rv$force_ui_update > 0) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$grid_color <- input$ui_grid_color
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_grid_major_linetype, {
-		if (rv$is_hydrating) return()
+		if (rv$is_hydrating || rv$force_ui_update > 0) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$grid_major_linetype <- input$ui_grid_major_linetype
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_grid_minor_linetype, {
-		if (rv$is_hydrating) return()
+		if (rv$is_hydrating || rv$force_ui_update > 0) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$grid_minor_linetype <- input$ui_grid_minor_linetype
@@ -253,8 +263,13 @@ register_theme_observers <- function(input, rv, session) {
 	observeEvent(input$ui_palette, {
 		if (rv$is_hydrating) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$palette <- input$ui_palette
+		
+		# Only update if the value is actually different
+		current_val <- get_current_value(rv, ap, "palette", "None")
+		if (input$ui_palette != current_val) {
+			ensure_edits(rv, ap, grid = FALSE)
+			rv$edits[[ap]]$palette <- input$ui_palette
+		}
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	# Revert colors to original
@@ -327,6 +342,10 @@ register_theme_observers <- function(input, rv, session) {
 	# Dynamic level color pickers - simple approach that only updates on valid changes
 	observe({
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+		
+		# Check if we're in the middle of a UI update (switching plots)
+		if (rv$is_hydrating) return()
+		
 		e <- rv$edits[[ap]]
 		
 		# Simple observers that only update when there's a valid new color
