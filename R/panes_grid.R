@@ -25,15 +25,24 @@ grid_pane_ui <- function(rv) {
   
   tagList(
     h4("Grid layout"),
-    numericInput("ui_grid_rows",   "Rows",    value = r, min = 1, max = 10, step = 1),
-    numericInput("ui_grid_cols",   "Columns", value = c, min = 1, max = 10, step = 1),
-    checkboxInput("ui_grid_collect","Collect/common legend", value = g$collect %||% BASE$grid_collect),
-    selectInput("ui_grid_legend",  "Legend position", choices = LEGEND_POS,
-                selected = g$legend %||% BASE$grid_legend_pos),
     
-    tags$hr(),
-    h4("Assign plots to grid cells"),
-    do.call(tagList, rows_ui)
+    # Use tabs for better organization
+    tabsetPanel(
+      id = "grid_tabs",
+      tabPanel("Layout",
+        fluidRow(
+          column(6, numericInput("ui_grid_rows", "Rows", value = r, min = 1, max = 10, step = 1)),
+          column(6, numericInput("ui_grid_cols", "Columns", value = c, min = 1, max = 10, step = 1))
+        ),
+        checkboxInput("ui_grid_collect","Collect/common legend", value = g$collect %||% BASE$grid_collect),
+        selectInput("ui_grid_legend",  "Legend position", choices = LEGEND_POS,
+                    selected = g$legend %||% BASE$grid_legend_pos)
+      ),
+      tabPanel("Assignments",
+        h5("Assign plots to grid cells"),
+        do.call(tagList, rows_ui)
+      )
+    )
   )
 }
 

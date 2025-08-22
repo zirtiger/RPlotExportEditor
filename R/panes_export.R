@@ -8,28 +8,36 @@ export_pane_ui <- function(rv) {
     return(tagList(
       h4("Export — Grid canvas"),
       tags$hr(),
-      h5("Dimensions"),
-      sliderInput("ui_gridexp_w", "Width (mm)", 
-                 value = ex$width_mm %||% BASE$width_mm, 
-                 min = 50, max = 1000, step = 10),
-      sliderInput("ui_gridexp_h", "Height (mm)", 
-                 value = ex$height_mm %||% BASE$height_mm, 
-                 min = 50, max = 1000, step = 10),
-      tags$hr(),
-      h5("Quality"),
-      selectInput("ui_gridexp_d", "DPI", 
-                 choices = c("72" = 72, "150" = 150, "300" = 300, "600" = 600, "Custom" = "custom"),
-                 selected = ifelse(ex$dpi %||% BASE$dpi %in% c(72, 150, 300, 600), 
-                                 as.character(ex$dpi %||% BASE$dpi), "custom")),
-      conditionalPanel(
-        condition = "input.ui_gridexp_d == 'custom'",
-        sliderInput("ui_gridexp_d_custom", "Custom DPI", 
-                   value = ex$dpi %||% BASE$dpi, 
-                   min = 72, max = 1200, step = 10)
+      
+      # Use tabs for better organization
+      tabsetPanel(
+        id = "grid_export_tabs",
+        tabPanel("Dimensions",
+          fluidRow(
+            column(6, sliderInput("ui_gridexp_w", "Width (mm)", 
+                                 value = ex$width_mm %||% BASE$width_mm, 
+                                 min = 50, max = 1000, step = 10)),
+            column(6, sliderInput("ui_gridexp_h", "Height (mm)", 
+                                 value = ex$height_mm %||% BASE$height_mm, 
+                                 min = 50, max = 1000, step = 10))
+          )
+        ),
+        tabPanel("Quality",
+          selectInput("ui_gridexp_d", "DPI", 
+                     choices = c("72" = 72, "150" = 150, "300" = 300, "600" = 600, "Custom" = "custom"),
+                     selected = ifelse(ex$dpi %||% BASE$dpi %in% c(72, 150, 300, 600), 
+                                     as.character(ex$dpi %||% BASE$dpi), "custom")),
+          conditionalPanel(
+            condition = "input.ui_gridexp_d == 'custom'",
+            sliderInput("ui_gridexp_d_custom", "Custom DPI", 
+                       value = ex$dpi %||% BASE$dpi, 
+                       min = 72, max = 1200, step = 10)
+          ),
+          selectInput("ui_gridexp_f", "Format", 
+                     choices = c("PNG","TIFF","PDF","SVG","EPS"), 
+                     selected = ex$format %||% BASE$format)
+        )
       ),
-      selectInput("ui_gridexp_f", "Format", 
-                 choices = c("PNG","TIFF","PDF","SVG","EPS"), 
-                 selected = ex$format %||% BASE$format),
       tags$hr(),
       downloadButton("download_grid_export", "Download Grid", class = "btn btn-success btn-block")
     ))
@@ -48,28 +56,36 @@ export_pane_ui <- function(rv) {
     tags$hr(),
     h4(sprintf("Export — %s", ap)),
     tags$hr(),
-    h5("Dimensions"),
-    sliderInput("ui_exp_width", "Width (mm)", 
-               value = ex$width_mm %||% BASE$width_mm, 
-               min = 20, max = 1000, step = 5),
-    sliderInput("ui_exp_height", "Height (mm)", 
-               value = ex$height_mm %||% BASE$height_mm, 
-               min = 20, max = 1000, step = 5),
-    tags$hr(),
-    h5("Quality"),
-    selectInput("ui_exp_dpi", "DPI", 
-               choices = c("72" = 72, "150" = 150, "300" = 300, "600" = 600, "Custom" = "custom"),
-               selected = ifelse(ex$dpi %||% BASE$dpi %in% c(72, 150, 300, 600), 
-                               as.character(ex$dpi %||% BASE$dpi), "custom")),
-    conditionalPanel(
-      condition = "input.ui_exp_dpi == 'custom'",
-      sliderInput("ui_exp_dpi_custom", "Custom DPI", 
-                 value = ex$dpi %||% BASE$dpi, 
-                 min = 72, max = 1200, step = 10)
+    
+    # Use tabs for better organization
+    tabsetPanel(
+      id = "export_tabs",
+      tabPanel("Dimensions",
+        fluidRow(
+          column(6, sliderInput("ui_exp_width", "Width (mm)", 
+                               value = ex$width_mm %||% BASE$width_mm, 
+                               min = 20, max = 1000, step = 5)),
+          column(6, sliderInput("ui_exp_height", "Height (mm)", 
+                               value = ex$height_mm %||% BASE$height_mm, 
+                               min = 20, max = 1000, step = 5))
+        )
+      ),
+      tabPanel("Quality",
+        selectInput("ui_exp_dpi", "DPI", 
+                   choices = c("72" = 72, "150" = 150, "300" = 300, "600" = 600, "Custom" = "custom"),
+                   selected = ifelse(ex$dpi %||% BASE$dpi %in% c(72, 150, 300, 600), 
+                                   as.character(ex$dpi %||% BASE$dpi), "custom")),
+        conditionalPanel(
+          condition = "input.ui_exp_dpi == 'custom'",
+          sliderInput("ui_exp_dpi_custom", "Custom DPI", 
+                     value = ex$dpi %||% BASE$dpi, 
+                     min = 72, max = 1200, step = 10)
+        ),
+        selectInput("ui_exp_format", "Format", 
+                   choices = c("PNG","TIFF","PDF","SVG","EPS"),
+                   selected = toupper(ex$format %||% BASE$format))
+      )
     ),
-    selectInput("ui_exp_format", "Format", 
-               choices = c("PNG","TIFF","PDF","SVG","EPS"),
-               selected = toupper(ex$format %||% BASE$format)),
     tags$hr(),
     downloadButton(paste0("download_plot_export_", ap), 
                   paste("Download", ap), 

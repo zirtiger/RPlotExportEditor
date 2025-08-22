@@ -2,7 +2,7 @@
 # Top-level UI layout: header, sidebar, body with placeholders
 
 app_ui <- function(request = NULL) {
-  header <- shinydashboard::dashboardHeader(title = "Plot Editor (WYSIWYG)")
+  header <- shinydashboard::dashboardHeader(title = "")
   
   sidebar <- shinydashboard::dashboardSidebar(
     width = 300,
@@ -24,20 +24,23 @@ app_ui <- function(request = NULL) {
     if (file.exists("www/script.js")) includeScript("www/script.js"),
     
     fluidRow(
+      style = "margin: 0; padding: 0;",
       column(
         width = 3,
+        style = "padding: 0;",
         shinydashboard::box(
-          title = "Settings",
-          width = 12, status = "primary", solidHeader = TRUE,
+          title = NULL,
+          width = 12, status = "primary", solidHeader = FALSE,
           height = "90vh",
           uiOutput("subsidebar")   # pane content (Grid/Export/Text/Theme)
         )
       ),
       column(
         width = 9,
+        style = "padding: 0;",
         shinydashboard::box(
-          title = "Plots",
-          width = 12, status = "primary", solidHeader = TRUE,
+          title = NULL,
+          width = 12, status = "primary", solidHeader = FALSE,
           height = "90vh",
           uiOutput("tabs_area")    # Grid + one tab per plot (previews)
         )

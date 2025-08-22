@@ -12,6 +12,20 @@ app_server <- function(input, output, session) {
   rv$active_tab  <- "Grid"
   rv$is_hydrating <- FALSE
   
+  # --- Menu item activation logic --------------------------------------
+  # Determine which menu items should be active based on current context
+  menu_activation <- reactive({
+    active_tab <- rv$active_tab
+    has_plots <- length(rv$plots) > 0
+    
+    list(
+      grid = TRUE,  # Grid is always available
+      export = has_plots,  # Export needs plots
+      text = has_plots && active_tab != "Grid",  # Text needs plots and not grid
+      theme = has_plots && active_tab != "Grid"  # Theme needs plots and not grid
+    )
+  })
+  
   # --- Demo loader & .rds loader --------------------------------------
   observeEvent(input$load_demo, {
     rv$plots <- list(
@@ -193,6 +207,28 @@ app_server <- function(input, output, session) {
   # --- Sidebar panes (render) ------------------------------------------
   output$subsidebar <- renderUI({
     cur <- input$mainmenu %||% "grid"
+    
+    # Check if the current menu item should be active
+    activation <- menu_activation()
+    if (cur == "text" && !activation$text) {
+      return(div(
+        h4("Text"),
+        helpText("Text editing is only available when viewing individual plots, not the grid layout.")
+      ))
+    }
+    if (cur == "theme" && !activation$theme) {
+      return(div(
+        h4("Theme"),
+        helpText("Theme editing is only available when viewing individual plots, not the grid layout.")
+      ))
+    }
+    if (cur == "export" && !activation$export) {
+      return(div(
+        h4("Export"),
+        helpText("Please load some plots first to access export options.")
+      ))
+    }
+    
     switch(cur,
            grid   = grid_pane_ui(rv),
            export = export_pane_ui(rv),

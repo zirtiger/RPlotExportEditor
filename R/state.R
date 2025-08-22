@@ -43,6 +43,44 @@ ensure_edits <- function(rv, name, grid = FALSE) {
       v <- tryCatch(p$labels[[lbl]], error = function(...) NULL)
       if (is.null(v)) NULL else as.character(v)
     }
+    
+    # Get axis limits from the plot if available
+    get_axis_limits <- function(axis) {
+      if (axis == "x") {
+        if (inherits(p$coordinates, "CoordCartesian")) {
+          x_range <- p$coordinates$limits$x
+          if (!is.null(x_range) && length(x_range) == 2) {
+            return(list(min = x_range[1], max = x_range[2]))
+          }
+        }
+        # Try to get from scales
+        if (length(p$scales$scales) > 0) {
+          x_scale <- p$scales$scales[[which(sapply(p$scales$scales, function(s) s$aesthetics[1] == "x"))]]
+          if (!is.null(x_scale$range$range)) {
+            return(list(min = x_scale$range$range[1], max = x_scale$range$range[2]))
+          }
+        }
+      } else if (axis == "y") {
+        if (inherits(p$coordinates, "CoordCartesian")) {
+          y_range <- p$coordinates$limits$y
+          if (!is.null(y_range) && length(y_range) == 2) {
+            return(list(min = y_range[1], max = y_range[2]))
+          }
+        }
+        # Try to get from scales
+        if (length(p$scales$scales) > 0) {
+          y_scale <- p$scales$scales[[which(sapply(p$scales$scales, function(s) s$aesthetics[1] == "y"))]]
+          if (!is.null(y_scale$range$range)) {
+            return(list(min = y_scale$range$range[1], max = y_scale$range$range[2]))
+          }
+        }
+      }
+      return(NULL)
+    }
+    
+    x_limits <- get_axis_limits("x")
+    y_limits <- get_axis_limits("y")
+    
     rv[[bucket]][[name]] <- list(
       title      = get_lab("title"),
       subtitle   = get_lab("subtitle"),
@@ -51,7 +89,11 @@ ensure_edits <- function(rv, name, grid = FALSE) {
       ylab       = get_lab("y"),
       theme      = BASE$theme,
       base_size  = BASE$base_size,
-      legend_pos = BASE$legend_pos
+      legend_pos = BASE$legend_pos,
+      x_min      = x_limits$min,
+      x_max      = x_limits$max,
+      y_min      = y_limits$min,
+      y_max      = y_limits$max
     )
   }
   

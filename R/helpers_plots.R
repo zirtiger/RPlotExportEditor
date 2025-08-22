@@ -58,16 +58,20 @@ apply_edits <- function(p, edits) {
   
   # Axis breaks
   if (!is.null(e$x_major) || !is.null(e$x_minor)) {
-    x_breaks <- if (!is.null(e$x_major)) seq(e$x_min %||% 0, e$x_max %||% 10, length.out = e$x_major + 1)
+    x_min_val <- if (!is.null(e$x_min) && is.finite(e$x_min)) e$x_min else 0
+    x_max_val <- if (!is.null(e$x_max) && is.finite(e$x_max)) e$x_max else 10
+    x_breaks <- if (!is.null(e$x_major)) seq(x_min_val, x_max_val, length.out = e$x_major + 1)
     x_minor_breaks <- if (!is.null(e$x_minor) && e$x_minor > 0) {
-      seq(e$x_min %||% 0, e$x_max %||% 10, length.out = e$x_minor + 1)
+      seq(x_min_val, x_max_val, length.out = e$x_minor + 1)
     } else NULL
     p <- p + ggplot2::scale_x_continuous(breaks = x_breaks, minor_breaks = x_minor_breaks)
   }
   if (!is.null(e$y_major) || !is.null(e$y_minor)) {
-    y_breaks <- if (!is.null(e$y_major)) seq(e$y_min %||% 0, e$y_max %||% 10, length.out = e$y_major + 1)
+    y_min_val <- if (!is.null(e$y_min) && is.finite(e$y_min)) e$y_min else 0
+    y_max_val <- if (!is.null(e$y_max) && is.finite(e$y_max)) e$y_max else 10
+    y_breaks <- if (!is.null(e$y_major)) seq(y_min_val, y_max_val, length.out = e$y_major + 1)
     y_minor_breaks <- if (!is.null(e$y_minor) && e$y_minor > 0) {
-      seq(e$y_min %||% 0, e$y_max %||% 10, length.out = e$y_minor + 1)
+      seq(y_min_val, y_max_val, length.out = e$y_minor + 1)
     } else NULL
     p <- p + ggplot2::scale_y_continuous(breaks = y_breaks, minor_breaks = y_minor_breaks)
   }
