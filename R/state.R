@@ -52,52 +52,55 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 			if (is.null(v)) NULL else as.character(v)
 		}
 		
-		# Get axis limits from the plot if available
-		get_axis_limits <- function(axis) {
+		# Helpers to extract limits and suggested steps
+		get_axis_from_build <- function(axis) {
+			res <- list(min = NULL, max = NULL, step_major = NULL, step_minor = NULL)
+			gb <- try(ggplot2::ggplot_build(p), silent = TRUE)
+			if (inherits(gb, "try-error")) return(res)
+			pp <- try(gb$layout$panel_params[[1]], silent = TRUE)
+			if (inherits(pp, "try-error") || is.null(pp)) return(res)
+			# ranges
 			if (axis == "x") {
-				if (inherits(p$coordinates, "CoordCartesian")) {
-					x_range <- p$coordinates$limits$x
-					if (!is.null(x_range) && length(x_range) == 2) {
-						return(list(min = x_range[1], max = x_range[2]))
-					}
-				}
-				# Try to get from scales
-				if (length(p$scales$scales) > 0) {
-					x_scale_idx <- which(sapply(p$scales$scales, function(s) {
-						tryCatch("x" %in% s$aesthetics, error = function(...) FALSE)
-					}))
-					if (length(x_scale_idx) > 0) {
-						x_scale <- p$scales$scales[[x_scale_idx[1]]]
-						if (!is.null(x_scale$range$range)) {
-							return(list(min = x_scale$range$range[1], max = x_scale$range$range[2]))
-						}
-					}
-				}
-			} else if (axis == "y") {
-				if (inherits(p$coordinates, "CoordCartesian")) {
-					y_range <- p$coordinates$limits$y
-					if (!is.null(y_range) && length(y_range) == 2) {
-						return(list(min = y_range[1], max = y_range[2]))
-					}
-				}
-				# Try to get from scales
-				if (length(p$scales$scales) > 0) {
-					y_scale_idx <- which(sapply(p$scales$scales, function(s) {
-						tryCatch("y" %in% s$aesthetics, error = function(...) FALSE)
-					}))
-					if (length(y_scale_idx) > 0) {
-						y_scale <- p$scales$scales[[y_scale_idx[1]]]
-						if (!is.null(y_scale$range$range)) {
-							return(list(min = y_scale$range$range[1], max = y_scale$range$range[2]))
-						}
-					}
-				}
+				range <- pp$x$range %||% pp$x.range %||% NULL
+				brks  <- pp$x$breaks %||% pp$breaks_x %||% pp$xb$breaks %||% NULL
+				mbrks <- pp$x$minor_breaks %||% pp$minor_breaks_x %||% NULL
+			} else {
+				range <- pp$y$range %||% pp$y.range %||% NULL
+				brks  <- pp$y$breaks %||% pp$breaks_y %||% pp$yb$breaks %||% NULL
+				mbrks <- pp$y$minor_breaks %||% pp$minor_breaks_y %||% NULL
 			}
-			return(NULL)
+			if (!is.null(range) && length(range) >= 2) {
+				res$min <- suppressWarnings(as.numeric(range[1]))
+				res$max <- suppressWarnings(as.numeric(range[2]))
+			}
+			# steps
+			if (!is.null(brks) && length(brks) >= 2) {
+				d <- diff(sort(unique(as.numeric(brks))))
+				if (length(d) > 0 && is.finite(median(d))) res$step_major <- unname(median(d))
+			}
+			if (!is.null(mbrks) && length(mbrks) >= 2) {
+				dm <- diff(sort(unique(as.numeric(mbrks))))
+				if (length(dm) > 0 && is.finite(median(dm))) res$step_minor <- unname(median(dm))
+			}
+			# fallback minor step
+			if (is.null(res$step_minor) && !is.null(res$step_major) && is.finite(res$step_major)) {
+				res$step_minor <- res$step_major / 2
+			}
+			res
 		}
 		
-		x_limits <- get_axis_limits("x")
-		y_limits <- get_axis_limits("y")
+		get_theme_elem <- function(elem) {
+			tryCatch(p$theme[[elem]], error = function(...) NULL)
+		}
+		is_blank <- function(x) inherits(x, "element_blank")
+		
+		x_info <- get_axis_from_build("x")
+		y_info <- get_axis_from_build("y")
+		
+		# Theme-derived defaults
+		maj_el <- get_theme_elem("panel.grid.major")
+		min_el <- get_theme_elem("panel.grid.minor")
+		lbox   <- get_theme_elem("legend.box.background")
 		
 		rv[[bucket]][[name]] <- list(
 			title      = get_lab("title"),
@@ -108,10 +111,24 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 			theme      = BASE$theme,
 			base_size  = BASE$base_size,
 			legend_pos = BASE$legend_pos,
-			x_min      = x_limits$min,
-			x_max      = x_limits$max,
-			y_min      = y_limits$min,
-			y_max      = y_limits$max
+			legend_box = if (!is.null(lbox)) !is_blank(lbox) else NULL,
+			panel_bg   = NULL,
+			plot_bg    = NULL,
+			grid_major = if (!is.null(maj_el)) !is_blank(maj_el) else NULL,
+			grid_minor = if (!is.null(min_el)) !is_blank(min_el) else NULL,
+			grid_major_linetype = tryCatch(maj_el$linetype, error = function(...) NULL),
+			grid_minor_linetype = tryCatch(min_el$linetype, error = function(...) NULL),
+			
+			# axis limits
+			x_min      = x_info$min,
+			x_max      = x_info$max,
+			y_min      = y_info$min,
+			y_max      = y_info$max,
+			# step suggestions
+			x_step_major = x_info$step_major,
+			x_step_minor = x_info$step_minor,
+			y_step_major = y_info$step_major,
+			y_step_minor = y_info$step_minor
 		)
 	}
 	
