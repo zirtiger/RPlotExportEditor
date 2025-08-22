@@ -123,8 +123,7 @@ theme_pane_ui <- function(rv) {
 						choices = c("None","viridis","magma","plasma","inferno","cividis"),
 						selected = e$palette %||% "None"),
 				div(style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;",
-					actionButton("ui_apply_palette_levels", "Generate colors for levels", class = "btn btn-sm btn-default"),
-					actionButton("ui_apply_level_colors", "Apply level colors", class = "btn btn-sm btn-primary")
+					actionButton("ui_apply_palette_levels", "Generate colors for levels", class = "btn btn-sm btn-default")
 				),
 				tags$hr(),
 				if (!length(colour_lvls) && !length(fill_lvls)) tags$em("No discrete colour/fill levels detected yet."),
@@ -261,25 +260,6 @@ register_theme_observers <- function(input, rv, session) {
 			rv$edits[[ap]]$fill_levels <- fill_lvls
 			rv$edits[[ap]]$fill_levels_cols <- unname(clrs)
 		}
-	}, ignoreInit = TRUE)
-	
-	observeEvent(input$ui_apply_level_colors, {
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		# commit current picker values
-		lv_col <- rv$edits[[ap]]$colour_levels %||% extract_levels_from_plot(rv$plots[[ap]], "colour")
-		if (length(lv_col)) {
-			vals <- vapply(seq_along(lv_col), function(i) input[[paste0("ui_col_level_", i)]] %||% NA_character_, character(1))
-			rv$edits[[ap]]$colour_levels <- lv_col
-			rv$edits[[ap]]$colour_levels_cols <- vals
-		}
-		lv_fill <- rv$edits[[ap]]$fill_levels %||% extract_levels_from_plot(rv$plots[[ap]], "fill")
-		if (length(lv_fill)) {
-			vals <- vapply(seq_along(lv_fill), function(i) input[[paste0("ui_fill_level_", i)]] %||% NA_character_, character(1))
-			rv$edits[[ap]]$fill_levels <- lv_fill
-			rv$edits[[ap]]$fill_levels_cols <- vals
-		}
-		showNotification("Applied level colors.", type = "message")
 	}, ignoreInit = TRUE)
 	
 	# Dynamic level color pickers

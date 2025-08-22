@@ -153,9 +153,9 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 			y_step_minor = y_info$step_minor
 		)
 		
-		# Seed colour/fill levels with default colors (if present)
+		# Seed colour/fill levels with actual colors from the plot (if present)
 		eval_levels <- function(p, aes_name) {
-			if (!requireNamespace("rlang", quietly = TRUE)) return(character(0))
+			if (!requireNamespace("rlang", quietly = TRUE)) return(list(levels = character(0), colors = character(0)))
 			collect <- character(0)
 			alt_aes <- if (identical(aes_name, "colour")) "color" else aes_name
 			get_expr <- function(mapping) {
@@ -179,19 +179,92 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 					append_vals(ly$data %||% p$data, expr_l)
 				}
 			}
-			unique(collect[nzchar(collect)])
+			levels <- unique(collect[nzchar(collect)])
+			
+			# Extract actual colors from the plot
+			colors <- character(0)
+			if (length(levels) > 0) {
+				# Try to get colors from ggplot_build
+				tryCatch({
+					built <- ggplot2::ggplot_build(p)
+					if (!is.null(built$data) && length(built$data) > 0) {
+						# Look for the aesthetic in the built data
+						for (layer_data in built$data) {
+							if (is.data.frame(layer_data) && nrow(layer_data) > 0) {
+								# Check if this layer has the aesthetic
+								if (aes_name %in% names(layer_data) || alt_aes %in% names(layer_data)) {
+									aes_col <- layer_data[[aes_name]] %||% layer_data[[alt_aes]]
+									if (!is.null(aes_col)) {
+										# Get unique values and their corresponding colors
+										unique_vals <- unique(aes_col)
+										if (length(unique_vals) == length(levels)) {
+											# Try to extract colors from the layer's geom
+											colors <- tryCatch({
+												# For most geoms, the color is in the data
+												as.character(unique_vals)
+											}, error = function(e) character(0))
+											break
+										}
+									}
+								}
+							}
+						}
+					}
+				}, error = function(e) {
+					# If ggplot_build fails, try a different approach
+				})
+				
+				# If we couldn't extract colors, try to get them from the plot's scales
+				if (length(colors) == 0) {
+					tryCatch({
+						# Check if there's a manual scale
+						if (aes_name == "colour" || aes_name == "color") {
+							if (!is.null(p$scales$scales)) {
+								for (scale in p$scales$scales) {
+									if (scale$aesthetics == "colour" || scale$aesthetics == "color") {
+										if (inherits(scale, "ScaleDiscrete")) {
+											colors <- as.character(scale$palette(scale$range$range))
+											break
+										}
+									}
+								}
+							}
+						} else if (aes_name == "fill") {
+							if (!is.null(p$scales$scales)) {
+								for (scale in p$scales$scales) {
+									if (scale$aesthetics == "fill") {
+										if (inherits(scale, "ScaleDiscrete")) {
+											colors <- as.character(scale$palette(scale$range$range))
+											break
+										}
+									}
+								}
+							}
+						}
+					}, error = function(e) {
+						# If scale extraction fails, fall back to default colors
+					})
+				}
+				
+				# If we still don't have colors, use default viridis
+				if (length(colors) == 0 || length(colors) != length(levels)) {
+					colors <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(levels)) else grDevices::rainbow(length(levels))
+				}
+			}
+			
+			list(levels = levels, colors = colors)
 		}
-		col_lvls <- eval_levels(p, "colour")
-		fill_lvls <- eval_levels(p, "fill")
-		if (length(col_lvls)) {
-			cols <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(col_lvls)) else grDevices::rainbow(length(col_lvls))
-			rv[[bucket]][[name]]$colour_levels <- col_lvls
-			rv[[bucket]][[name]]$colour_levels_cols <- cols
+		
+		col_result <- eval_levels(p, "colour")
+		fill_result <- eval_levels(p, "fill")
+		
+		if (length(col_result$levels)) {
+			rv[[bucket]][[name]]$colour_levels <- col_result$levels
+			rv[[bucket]][[name]]$colour_levels_cols <- col_result$colors
 		}
-		if (length(fill_lvls)) {
-			cols <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(fill_lvls)) else grDevices::rainbow(length(fill_lvls))
-			rv[[bucket]][[name]]$fill_levels <- fill_lvls
-			rv[[bucket]][[name]]$fill_levels_cols <- cols
+		if (length(fill_result$levels)) {
+			rv[[bucket]][[name]]$fill_levels <- fill_result$levels
+			rv[[bucket]][[name]]$fill_levels_cols <- fill_result$colors
 		}
 	}
 	
