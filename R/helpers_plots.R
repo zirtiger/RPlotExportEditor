@@ -15,25 +15,27 @@ apply_edits <- function(p, edits) {
   tfun <- get_theme_fun(e$theme %||% BASE$theme)
   p <- p + tfun(base_size = e$base_size %||% BASE$base_size)
   
-  # Colors: prefer explicit per-level mappings when present
+  # Colors: apply per-level mappings using limits-aligned values to avoid name mismatch
   apply_level_colors <- function(p) {
     try_apply <- function(expr, p) { tryCatch({ expr }, error = function(...) p) }
     # colour levels
     if (!is.null(e$colour_levels) && !is.null(e$colour_levels_cols)) {
       lv <- as.character(e$colour_levels)
       cols <- as.character(e$colour_levels_cols)
+      keep <- nzchar(lv) & nzchar(cols)
+      lv <- lv[keep]; cols <- cols[keep]
       if (length(lv) && length(cols) && length(lv) == length(cols)) {
-        nm <- cols; names(nm) <- lv
-        p <- try_apply(p + ggplot2::scale_color_manual(values = nm), p)
+        p <- try_apply(p + ggplot2::scale_color_manual(values = unname(cols), limits = lv, breaks = lv), p)
       }
     }
     # fill levels
     if (!is.null(e$fill_levels) && !is.null(e$fill_levels_cols)) {
       lv <- as.character(e$fill_levels)
       cols <- as.character(e$fill_levels_cols)
+      keep <- nzchar(lv) & nzchar(cols)
+      lv <- lv[keep]; cols <- cols[keep]
       if (length(lv) && length(cols) && length(lv) == length(cols)) {
-        nm <- cols; names(nm) <- lv
-        p <- try_apply(p + ggplot2::scale_fill_manual(values = nm), p)
+        p <- try_apply(p + ggplot2::scale_fill_manual(values = unname(cols), limits = lv, breaks = lv), p)
       }
     }
     p

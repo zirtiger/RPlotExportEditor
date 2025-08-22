@@ -152,6 +152,47 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 			y_step_major = y_info$step_major,
 			y_step_minor = y_info$step_minor
 		)
+		
+		# Seed colour/fill levels with default colors (if present)
+		eval_levels <- function(p, aes_name) {
+			if (!requireNamespace("rlang", quietly = TRUE)) return(character(0))
+			collect <- character(0)
+			alt_aes <- if (identical(aes_name, "colour")) "color" else aes_name
+			get_expr <- function(mapping) {
+				if (is.null(mapping)) return(NULL)
+				if (!is.null(mapping[[aes_name]])) return(mapping[[aes_name]])
+				if (!is.null(mapping[[alt_aes]])) return(mapping[[alt_aes]])
+				NULL
+			}
+			append_vals <- function(dat, expr) {
+				if (is.null(expr) || is.null(dat) || !is.data.frame(dat) || nrow(dat) == 0) return()
+				vals <- try(rlang::eval_tidy(expr, data = dat), silent = TRUE)
+				if (inherits(vals, "try-error") || is.null(vals)) return()
+				vals <- vals[!is.na(vals)]
+				if (is.factor(vals)) collect <<- c(collect, as.character(levels(vals))) else collect <<- c(collect, unique(as.character(vals)))
+			}
+			expr_p <- get_expr(p$mapping)
+			append_vals(p$data, expr_p)
+			if (!is.null(p$layers) && length(p$layers)) {
+				for (ly in p$layers) {
+					expr_l <- get_expr(ly$mapping) %||% expr_p
+					append_vals(ly$data %||% p$data, expr_l)
+				}
+			}
+			unique(collect[nzchar(collect)])
+		}
+		col_lvls <- eval_levels(p, "colour")
+		fill_lvls <- eval_levels(p, "fill")
+		if (length(col_lvls)) {
+			cols <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(col_lvls)) else grDevices::rainbow(length(col_lvls))
+			rv[[bucket]][[name]]$colour_levels <- col_lvls
+			rv[[bucket]][[name]]$colour_levels_cols <- cols
+		}
+		if (length(fill_lvls)) {
+			cols <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(fill_lvls)) else grDevices::rainbow(length(fill_lvls))
+			rv[[bucket]][[name]]$fill_levels <- fill_lvls
+			rv[[bucket]][[name]]$fill_levels_cols <- cols
+		}
 	}
 	
 	if (!grid && is.null(rv$export[[name]])) {
