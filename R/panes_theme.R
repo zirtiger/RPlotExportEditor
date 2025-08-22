@@ -175,25 +175,15 @@ register_theme_observers <- function(input, rv, session) {
 	observeEvent(input$ui_theme, {
 		if (rv$is_hydrating) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		
-		# Only update if the value is actually different
-		current_val <- get_current_value(rv, ap, "theme", BASE$theme)
-		if (input$ui_theme != current_val) {
-			ensure_edits(rv, ap, grid = FALSE)
-			rv$edits[[ap]]$theme <- input$ui_theme
-		}
+		ensure_edits(rv, ap, grid = FALSE)
+		rv$edits[[ap]]$theme <- input$ui_theme
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_base_size, {
 		if (rv$is_hydrating) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		
-		# Only update if the value is actually different
-		current_val <- get_current_value(rv, ap, "base_size", BASE$base_size)
-		if (input$ui_base_size != current_val) {
-			ensure_edits(rv, ap, grid = FALSE)
-			rv$edits[[ap]]$base_size <- as_num_safe(input$ui_base_size)
-		}
+		ensure_edits(rv, ap, grid = FALSE)
+		rv$edits[[ap]]$base_size <- as_num_safe(input$ui_base_size)
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_legend_pos, {
@@ -263,13 +253,8 @@ register_theme_observers <- function(input, rv, session) {
 	observeEvent(input$ui_palette, {
 		if (rv$is_hydrating) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		
-		# Only update if the value is actually different
-		current_val <- get_current_value(rv, ap, "palette", "None")
-		if (input$ui_palette != current_val) {
-			ensure_edits(rv, ap, grid = FALSE)
-			rv$edits[[ap]]$palette <- input$ui_palette
-		}
+		ensure_edits(rv, ap, grid = FALSE)
+		rv$edits[[ap]]$palette <- input$ui_palette
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	# Revert colors to original

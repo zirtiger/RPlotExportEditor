@@ -74,7 +74,10 @@ app_server <- function(input, output, session) {
       # For plot tabs, ensure we have fresh edits for this specific plot
       ensure_edits(rv, rv$active_tab, grid = FALSE)
       
-      updateTabItems(session, "mainmenu", rv$last_mainmenu %||% "text")
+      # If this is the first time switching to a plot (no last_mainmenu set),
+      # default to "text" instead of staying on grid
+      target_menu <- if (is.null(rv$last_mainmenu) || rv$last_mainmenu == "grid") "text" else rv$last_mainmenu
+      updateTabItems(session, "mainmenu", target_menu)
     }
   }, ignoreInit = FALSE)
   

@@ -37,13 +37,12 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 	# If this is a plot (not grid), ensure we have the original values
 	if (!grid && !is.null(rv$plots[[name]])) {
 		p <- rv$plots[[name]]
-		
-		# Only extract originals if we haven't done so before
-		if (length(rv[[orig_bucket]][[name]]) == 0) {
-			# Extract original plot values
+		if (length(rv[[orig_bucket]][[name]]) == 0) { # Only extract originals once
+			
+			# Extract labels
 			get_lab <- function(lbl) {
 				v <- tryCatch(p$labels[[lbl]], error = function(...) NULL)
-				if (is.null(v)) NULL else as.character(v)
+				if (is.null(v)) "" else as.character(v)
 			}
 			
 			# Helpers to extract limits and suggested steps
@@ -113,6 +112,8 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				y_info$min <- sy[1]; y_info$max <- sy[2]
 			}
 			
+
+			
 			# Theme-derived defaults
 			maj_el <- get_theme_elem("panel.grid.major")
 			min_el <- get_theme_elem("panel.grid.minor")
@@ -127,20 +128,20 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				xlab       = get_lab("x"),
 				ylab       = get_lab("y"),
 				
-				# Theme - only set essential defaults
+				# Theme - use BASE defaults for essential settings
 				theme      = BASE$theme,
 				base_size  = BASE$base_size,
 				legend_pos = BASE$legend_pos,
 				legend_box = if (!is.null(lbox)) !is_blank(lbox) else NULL,
-				panel_bg   = NULL,  # Keep as NULL - optional setting
-				plot_bg    = NULL,  # Keep as NULL - optional setting
+				panel_bg   = NULL,  # Optional setting
+				plot_bg    = NULL,  # Optional setting
 				
-				# Grid - only set if actually present in plot
-				grid_major = if (!is.null(maj_el)) !is_blank(maj_el) else NULL,
-				grid_minor = if (!is.null(min_el)) !is_blank(min_el) else NULL,
-				grid_major_linetype = if (!is.null(maj_el)) tryCatch(maj_el$linetype, error = function(...) NULL) else NULL,
-				grid_minor_linetype = if (!is.null(min_el)) tryCatch(min_el$linetype, error = function(...) NULL) else NULL,
-				grid_color = NULL,  # Keep as NULL - optional setting
+				# Grid - use BASE defaults for essential settings
+				grid_major = if (!is.null(maj_el)) !is_blank(maj_el) else FALSE,
+				grid_minor = if (!is.null(min_el)) !is_blank(min_el) else FALSE,
+				grid_major_linetype = if (!is.null(maj_el)) tryCatch(maj_el$linetype, error = function(...) "solid") else "solid",
+				grid_minor_linetype = if (!is.null(min_el)) tryCatch(min_el$linetype, error = function(...) "dashed") else "dashed",
+				grid_color = NULL,  # Optional setting
 				
 				# Axis limits - only set if actually present in plot
 				x_min      = x_info$min,
@@ -148,25 +149,25 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				y_min      = y_info$min,
 				y_max      = y_info$max,
 				
-				# Step suggestions - only set if actually present in plot
-				x_step_major = x_info$step_major,
-				x_step_minor = x_info$step_minor,
-				y_step_major = y_info$step_major,
-				y_step_minor = y_info$step_minor,
+				# Step suggestions - use BASE defaults if not present in plot
+				x_step_major = x_info$step_major %||% 1,
+				x_step_minor = x_info$step_minor %||% 0.5,
+				y_step_major = y_info$step_major %||% 1,
+				y_step_minor = y_info$step_minor %||% 0.5,
 				
-				# Colors - keep as NULL until explicitly set
-				palette = NULL,
+				# Colors - use BASE defaults
+				palette = "None",
 				continuous_colour_palette = NULL,
 				continuous_fill_palette = NULL,
 				
-				# Text sizes - only set essential defaults, keep optional as NULL
-				title_size = NULL,      # Optional - only if user sets it
-				subtitle_size = NULL,   # Optional - only if user sets it
-				caption_size = NULL,    # Optional - only if user sets it
-				axis_title_size = NULL, # Optional - only if user sets it
-				axis_text_size = NULL,  # Optional - only if user sets it
-				legend_title_size = NULL, # Optional - only if user sets it
-				legend_text_size = NULL   # Optional - only if user sets it
+				# Text sizes - use BASE defaults for essential settings
+				title_size = BASE$title_size,
+				subtitle_size = BASE$subtitle_size,
+				caption_size = BASE$caption_size,
+				axis_title_size = BASE$axis_title_size,
+				axis_text_size = BASE$axis_text_size,
+				legend_title_size = BASE$legend_title_size,
+				legend_text_size = BASE$legend_text_size
 			)
 			
 			# Extract original color levels and colors
@@ -291,6 +292,11 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 		
 		# Don't automatically initialize edits - let the UI load from originals
 		# Edits will only be populated when user actually makes changes
+		
+		# Initialize edits with original values (if edits are empty)
+		if (length(rv[[bucket]][[name]]) == 0) {
+			rv[[bucket]][[name]] <- rv[[orig_bucket]][[name]]
+		}
 	}
 	
 	if (!grid && is.null(rv$export[[name]])) {
