@@ -164,45 +164,55 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				if (!is.null(mapping[[alt_aes]])) return(mapping[[alt_aes]])
 				NULL
 			}
-			append_vals <- function(dat, expr) {
-				if (is.null(expr) || is.null(dat) || !is.data.frame(dat) || nrow(dat) == 0) return()
+			eval_on <- function(dat, expr) {
+				if (is.null(expr) || is.null(dat)) return(NULL)
+				if (!is.data.frame(dat) || nrow(dat) == 0) return(NULL)
 				vals <- try(rlang::eval_tidy(expr, data = dat), silent = TRUE)
-				if (inherits(vals, "try-error") || is.null(vals)) return()
+				if (inherits(vals, "try-error") || is.null(vals)) return(NULL)
+				vals
+			}
+			append_vals <- function(vals) {
+				if (is.null(vals)) return()
 				vals <- vals[!is.na(vals)]
 				if (is.factor(vals)) collect <<- c(collect, as.character(levels(vals))) else collect <<- c(collect, unique(as.character(vals)))
 			}
 			expr_p <- get_expr(p$mapping)
-			append_vals(p$data, expr_p)
+			append_vals(eval_on(p$data, expr_p))
 			if (!is.null(p$layers) && length(p$layers)) {
 				for (ly in p$layers) {
 					expr_l <- get_expr(ly$mapping) %||% expr_p
-					append_vals(ly$data %||% p$data, expr_l)
+					append_vals(eval_on(ly$data %||% p$data, expr_l))
 				}
 			}
 			levels <- unique(collect[nzchar(collect)])
 			
-			# Extract actual colors from the plot
+			# Try to extract actual colors from the plot's scales
 			colors <- character(0)
 			if (length(levels) > 0) {
-				# Try to get colors from ggplot_build
 				tryCatch({
-					built <- ggplot2::ggplot_build(p)
-					if (!is.null(built$data) && length(built$data) > 0) {
-						# Look for the aesthetic in the built data
-						for (layer_data in built$data) {
-							if (is.data.frame(layer_data) && nrow(layer_data) > 0) {
-								# Check if this layer has the aesthetic
-								if (aes_name %in% names(layer_data) || alt_aes %in% names(layer_data)) {
-									aes_col <- layer_data[[aes_name]] %||% layer_data[[alt_aes]]
-									if (!is.null(aes_col)) {
-										# Get unique values and their corresponding colors
-										unique_vals <- unique(aes_col)
-										if (length(unique_vals) == length(levels)) {
-											# Try to extract colors from the layer's geom
-											colors <- tryCatch({
-												# For most geoms, the color is in the data
-												as.character(unique_vals)
-											}, error = function(e) character(0))
+					# Check if there's a manual scale with colors
+					if (aes_name == "colour" || aes_name == "color") {
+						if (!is.null(p$scales$scales)) {
+							for (scale in p$scales$scales) {
+								if (scale$aesthetics == "colour" || scale$aesthetics == "color") {
+									if (inherits(scale, "ScaleDiscrete")) {
+										# Try to get the actual colors from the scale
+										if (!is.null(scale$palette) && is.function(scale$palette)) {
+											colors <- scale$palette(length(levels))
+											break
+										}
+									}
+								}
+							}
+						}
+					} else if (aes_name == "fill") {
+						if (!is.null(p$scales$scales)) {
+							for (scale in p$scales$scales) {
+								if (scale$aesthetics == "fill") {
+									if (inherits(scale, "ScaleDiscrete")) {
+										# Try to get the actual colors from the scale
+										if (!is.null(scale$palette) && is.function(scale$palette)) {
+											colors <- scale$palette(length(levels))
 											break
 										}
 									}
@@ -211,44 +221,12 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 						}
 					}
 				}, error = function(e) {
-					# If ggplot_build fails, try a different approach
+					# If scale extraction fails, don't set colors
 				})
 				
-				# If we couldn't extract colors, try to get them from the plot's scales
-				if (length(colors) == 0) {
-					tryCatch({
-						# Check if there's a manual scale
-						if (aes_name == "colour" || aes_name == "color") {
-							if (!is.null(p$scales$scales)) {
-								for (scale in p$scales$scales) {
-									if (scale$aesthetics == "colour" || scale$aesthetics == "color") {
-										if (inherits(scale, "ScaleDiscrete")) {
-											colors <- as.character(scale$palette(scale$range$range))
-											break
-										}
-									}
-								}
-							}
-						} else if (aes_name == "fill") {
-							if (!is.null(p$scales$scales)) {
-								for (scale in p$scales$scales) {
-									if (scale$aesthetics == "fill") {
-										if (inherits(scale, "ScaleDiscrete")) {
-											colors <- as.character(scale$palette(scale$range$range))
-											break
-										}
-									}
-								}
-							}
-						}
-					}, error = function(e) {
-						# If scale extraction fails, fall back to default colors
-					})
-				}
-				
-				# If we still don't have colors, use default viridis
-				if (length(colors) == 0 || length(colors) != length(levels)) {
-					colors <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(levels)) else grDevices::rainbow(length(levels))
+				# Only use extracted colors if we got the right number
+				if (length(colors) != length(levels)) {
+					colors <- character(0)
 				}
 			}
 			
@@ -260,11 +238,17 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 		
 		if (length(col_result$levels)) {
 			rv[[bucket]][[name]]$colour_levels <- col_result$levels
-			rv[[bucket]][[name]]$colour_levels_cols <- col_result$colors
+			# Only set colors if we successfully extracted them from the plot
+			if (length(col_result$colors) > 0) {
+				rv[[bucket]][[name]]$colour_levels_cols <- col_result$colors
+			}
 		}
 		if (length(fill_result$levels)) {
 			rv[[bucket]][[name]]$fill_levels <- fill_result$levels
-			rv[[bucket]][[name]]$fill_levels_cols <- fill_result$colors
+			# Only set colors if we successfully extracted them from the plot
+			if (length(fill_result$colors) > 0) {
+				rv[[bucket]][[name]]$fill_levels_cols <- fill_result$colors
+			}
 		}
 	}
 	

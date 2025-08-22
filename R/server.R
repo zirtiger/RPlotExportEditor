@@ -71,19 +71,17 @@ app_server <- function(input, output, session) {
     if (identical(rv$active_tab, "Grid")) {
       updateTabItems(session, "mainmenu", "grid")
     } else if (length(rv$plots) > 0) {
-      # For plot tabs, ensure we have fresh edits and reset color inheritance
+      # For plot tabs, ensure we have fresh edits
       ensure_edits(rv, rv$active_tab, grid = FALSE)
       
-      # Reset color levels to prevent inheritance from previous plots
-      if (!is.null(rv$edits[[rv$active_tab]])) {
-        # Clear any inherited color settings
-        rv$edits[[rv$active_tab]]$continuous_colour_palette <- NULL
-        rv$edits[[rv$active_tab]]$continuous_fill_palette <- NULL
+      # Only reload color levels if they haven't been set yet for this plot
+      if (!is.null(rv$edits[[rv$active_tab]]) && 
+          (is.null(rv$edits[[rv$active_tab]]$colour_levels) || 
+           is.null(rv$edits[[rv$active_tab]]$fill_levels))) {
         
-        # Reload color levels from the current plot
+        # Extract current levels and colors from the plot
         p <- rv$plots[[rv$active_tab]]
         if (!is.null(p)) {
-          # Extract current levels and colors from the plot
           extract_levels_from_plot <- function(p, aes_name) {
             if (!requireNamespace("rlang", quietly = TRUE)) return(character(0))
             collect <- character(0)
@@ -117,28 +115,21 @@ app_server <- function(input, output, session) {
             unique(collect[nzchar(collect)])
           }
           
-          # Reload colour levels
-          col_lvls <- extract_levels_from_plot(p, "colour")
-          if (length(col_lvls)) {
-            # Generate default colors for the new levels
-            cols <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(col_lvls)) else grDevices::rainbow(length(col_lvls))
-            rv$edits[[rv$active_tab]]$colour_levels <- col_lvls
-            rv$edits[[rv$active_tab]]$colour_levels_cols <- cols
-          } else {
-            rv$edits[[rv$active_tab]]$colour_levels <- NULL
-            rv$edits[[rv$active_tab]]$colour_levels_cols <- NULL
+          # Only set levels if they don't exist yet
+          if (is.null(rv$edits[[rv$active_tab]]$colour_levels)) {
+            col_lvls <- extract_levels_from_plot(p, "colour")
+            if (length(col_lvls)) {
+              rv$edits[[rv$active_tab]]$colour_levels <- col_lvls
+              # Don't set colors yet - let the user choose or preserve original
+            }
           }
           
-          # Reload fill levels
-          fill_lvls <- extract_levels_from_plot(p, "fill")
-          if (length(fill_lvls)) {
-            # Generate default colors for the new levels
-            cols <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(fill_lvls)) else grDevices::rainbow(length(fill_lvls))
-            rv$edits[[rv$active_tab]]$fill_levels <- fill_lvls
-            rv$edits[[rv$active_tab]]$fill_levels_cols <- cols
-          } else {
-            rv$edits[[rv$active_tab]]$fill_levels <- NULL
-            rv$edits[[rv$active_tab]]$fill_levels_cols <- NULL
+          if (is.null(rv$edits[[rv$active_tab]]$fill_levels)) {
+            fill_lvls <- extract_levels_from_plot(p, "fill")
+            if (length(fill_lvls)) {
+              rv$edits[[rv$active_tab]]$fill_levels <- fill_lvls
+              # Don't set colors yet - let the user choose or preserve original
+            }
           }
         }
       }
