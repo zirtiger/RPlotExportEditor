@@ -49,131 +49,40 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 			}
 			
 			# Helpers to extract limits and suggested steps
-			get_axis_from_build <- function(axis) {
-				res <- list(min = NULL, max = NULL, step_major = NULL, step_minor = NULL)
-				gb <- try(ggplot2::ggplot_build(p), silent = TRUE)
-				if (inherits(gb, "try-error")) return(res)
-				pp <- try(gb$layout$panel_params[[1]], silent = TRUE)
-				if (inherits(pp, "try-error") || is.null(pp)) return(res)
-				# ranges
-				if (axis == "x") {
-					range <- pp$x$range %||% pp$x.range %||% NULL
-					brks  <- pp$x$breaks %||% pp$breaks_x %||% pp$xb$breaks %||% NULL
-					mbrks <- pp$x$minor_breaks %||% pp$minor_breaks_x %||% NULL
-				} else {
-					range <- pp$y$range %||% pp$y.range %||% NULL
-					brks  <- pp$y$breaks %||% pp$breaks_y %||% pp$yb$breaks %||% NULL
-					mbrks <- pp$y$minor_breaks %||% pp$minor_breaks_y %||% NULL
-				}
-				if (!is.null(range) && length(range) >= 2) {
-					res$min <- suppressWarnings(as.numeric(range[1]))
-					res$max <- suppressWarnings(as.numeric(range[2]))
-				}
-				# steps
-				if (!is.null(brks) && length(brks) >= 2) {
-					d <- diff(sort(unique(as.numeric(brks))))
-					if (length(d) > 0 && is.finite(median(d))) res$step_major <- unname(median(d))
-				}
-				if (!is.null(mbrks) && length(mbrks) >= 2) {
-					dm <- diff(sort(unique(as.numeric(mbrks))))
-					if (length(dm) > 0 && is.finite(median(dm))) res$step_minor <- unname(median(dm))
-				}
-				# fallback minor step
-				if (is.null(res$step_minor) && !is.null(res$step_major) && is.finite(res$step_major)) {
-					res$step_minor <- res$step_major / 2
-				}
-				res
-			}
+			x_info <- list(min = NULL, max = NULL, step_major = NULL, step_minor = NULL)
+			y_info <- list(min = NULL, max = NULL, step_major = NULL, step_minor = NULL)
 			
-			get_theme_elem <- function(elem) {
-				tryCatch(p$theme[[elem]], error = function(...) NULL)
-			}
-			is_blank <- function(x) inherits(x, "element_blank")
-			
-			x_info <- get_axis_from_build("x")
-			y_info <- get_axis_from_build("y")
-			
-			# Snap limits to clean values using step or pretty()
-			snap_limits <- function(minv, maxv, step) {
-				if (is.finite(minv) && is.finite(maxv) && maxv > minv) {
-					if (is.finite(step) && step > 0) {
-						lo <- floor(minv / step) * step
-						hi <- ceiling(maxv / step) * step
-						c(lo, hi)
-					} else {
-						pr <- pretty(c(minv, maxv), n = 5)
-						range(pr)[1:2]
+			# Extract axis limits and suggest steps
+			if (requireNamespace("scales", quietly = TRUE)) {
+				tryCatch({
+					built <- ggplot2::ggplot_build(p)
+					if (!is.null(built$layout$panel_scales_x) && length(built$layout$panel_scales_x) > 0) {
+						sx <- built$layout$panel_scales_x[[1]]$range$range
+						if (length(sx) >= 2) {
+							x_info$min <- sx[1]; x_info$max <- sx[2]
+						}
 					}
-				} else c(minv, maxv)
+					if (!is.null(built$layout$panel_scales_y) && length(built$layout$panel_scales_y) > 0) {
+						sy <- built$layout$panel_scales_y[[1]]$range$range
+						if (length(sy) >= 2) {
+							y_info$min <- sy[1]; y_info$max <- sy[2]
+						}
+					}
+				}, error = function(e) NULL)
 			}
-			if (!is.null(x_info$min) && !is.null(x_info$max)) {
-				sx <- snap_limits(x_info$min, x_info$max, x_info$step_major %||% NA_real_)
-				x_info$min <- sx[1]; x_info$max <- sx[2]
-			}
-			if (!is.null(y_info$min) && !is.null(y_info$max)) {
-				sy <- snap_limits(y_info$min, y_info$max, y_info$step_major %||% NA_real_)
-				y_info$min <- sy[1]; y_info$max <- sy[2]
-			}
-			
-
 			
 			# Theme-derived defaults
 			maj_el <- get_theme_elem("panel.grid.major")
 			min_el <- get_theme_elem("panel.grid.minor")
 			lbox   <- get_theme_elem("legend.box.background")
 			
-			# Store ALL original values
-			rv[[orig_bucket]][[name]] <- list(
-				# Labels
-				title      = get_lab("title"),
-				subtitle   = get_lab("subtitle"),
-				caption    = get_lab("caption"),
-				xlab       = get_lab("x"),
-				ylab       = get_lab("y"),
-				
-				# Theme - use BASE defaults for essential settings
-				theme      = BASE$theme,
-				base_size  = BASE$base_size,
-				legend_pos = BASE$legend_pos,
-				legend_box = if (!is.null(lbox)) !is_blank(lbox) else NULL,
-				panel_bg   = NULL,  # Optional setting
-				plot_bg    = NULL,  # Optional setting
-				
-				# Grid - use BASE defaults for essential settings
-				grid_major = if (!is.null(maj_el)) !is_blank(maj_el) else FALSE,
-				grid_minor = if (!is.null(min_el)) !is_blank(min_el) else FALSE,
-				grid_major_linetype = if (!is.null(maj_el)) tryCatch(maj_el$linetype, error = function(...) "solid") else "solid",
-				grid_minor_linetype = if (!is.null(min_el)) tryCatch(min_el$linetype, error = function(...) "dashed") else "dashed",
-				grid_color = NULL,  # Optional setting
-				
-				# Axis limits - only set if actually present in plot
-				x_min      = x_info$min,
-				x_max      = x_info$max,
-				y_min      = y_info$min,
-				y_max      = y_info$max,
-				
-				# Step suggestions - use BASE defaults if not present in plot
-				x_step_major = x_info$step_major %||% 1,
-				x_step_minor = x_info$step_minor %||% 0.5,
-				y_step_major = y_info$step_major %||% 1,
-				y_step_minor = y_info$step_minor %||% 0.5,
-				
-				# Colors - use BASE defaults
-				palette = "None",
-				continuous_colour_palette = continuous_colour_palette,
-				continuous_fill_palette = continuous_fill_palette,
-				
-				# Text sizes - use BASE defaults for essential settings
-				title_size = BASE$title_size,
-				subtitle_size = BASE$subtitle_size,
-				caption_size = BASE$caption_size,
-				axis_title_size = BASE$axis_title_size,
-				axis_text_size = BASE$axis_text_size,
-				legend_title_size = BASE$legend_title_size,
-				legend_text_size = BASE$legend_text_size
-			)
+			# Helper functions
+			get_theme_elem <- function(elem) {
+				tryCatch(p$theme[[elem]], error = function(...) NULL)
+			}
+			is_blank <- function(x) inherits(x, "element_blank")
 			
-			# Extract original color levels and colors
+			# Helper function to extract levels from plot
 			extract_levels_from_plot <- function(p, aes_name) {
 				if (!requireNamespace("rlang", quietly = TRUE)) return(list(levels = character(0), colors = character(0)))
 				
@@ -333,6 +242,57 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				rv[[orig_bucket]][[name]]$fill_levels <- fill_result$levels
 				rv[[orig_bucket]][[name]]$fill_levels_cols <- fill_result$colors
 			}
+			
+			# Store ALL original values
+			rv[[orig_bucket]][[name]] <- list(
+				# Labels
+				title      = get_lab("title"),
+				subtitle   = get_lab("subtitle"),
+				caption    = get_lab("caption"),
+				xlab       = get_lab("x"),
+				ylab       = get_lab("y"),
+				
+				# Theme - use BASE defaults for essential settings
+				theme      = BASE$theme,
+				base_size  = BASE$base_size,
+				legend_pos = BASE$legend_pos,
+				legend_box = if (!is.null(lbox)) !is_blank(lbox) else NULL,
+				panel_bg   = NULL,  # Optional setting
+				plot_bg    = NULL,  # Optional setting
+				
+				# Grid - use BASE defaults for essential settings
+				grid_major = if (!is.null(maj_el)) !is_blank(maj_el) else FALSE,
+				grid_minor = if (!is.null(min_el)) !is_blank(min_el) else FALSE,
+				grid_major_linetype = if (!is.null(maj_el)) tryCatch(maj_el$linetype, error = function(...) "solid") else "solid",
+				grid_minor_linetype = if (!is.null(min_el)) tryCatch(min_el$linetype, error = function(...) "dashed") else "dashed",
+				grid_color = NULL,  # Optional setting
+				
+				# Axis limits - only set if actually present in plot
+				x_min      = x_info$min,
+				x_max      = x_info$max,
+				y_min      = y_info$min,
+				y_max      = y_info$max,
+				
+				# Step suggestions - use BASE defaults if not present in plot
+				x_step_major = x_info$step_major %||% 1,
+				x_step_minor = x_info$step_minor %||% 0.5,
+				y_step_major = y_info$step_major %||% 1,
+				y_step_minor = y_info$step_minor %||% 0.5,
+				
+				# Colors - use BASE defaults
+				palette = "None",
+				continuous_colour_palette = continuous_colour_palette,
+				continuous_fill_palette = continuous_fill_palette,
+				
+				# Text sizes - use BASE defaults for essential settings
+				title_size = BASE$title_size,
+				subtitle_size = BASE$subtitle_size,
+				caption_size = BASE$caption_size,
+				axis_title_size = BASE$axis_title_size,
+				axis_text_size = BASE$axis_text_size,
+				legend_title_size = BASE$legend_title_size,
+				legend_text_size = BASE$legend_text_size
+			)
 		}
 		
 		# Don't automatically initialize edits - let the UI load from originals
