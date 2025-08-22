@@ -157,39 +157,59 @@ theme_pane_ui <- function(rv) {
 				),
 				tags$hr(),
 				
-				# Continuous color palettes
-				h5("Continuous Color Scales"),
-				selectInput("ui_continuous_colour_palette", "Continuous Colour Palette",
-					choices = c("None", "viridis", "magma", "plasma", "inferno", "cividis"),
-					selected = continuous_colour_palette_val),
-				selectInput("ui_continuous_fill_palette", "Continuous Fill Palette",
-					choices = c("None", "viridis", "magma", "plasma", "inferno", "cividis"),
-					selected = continuous_fill_palette_val),
-				tags$hr(),
+				# Show continuous palette controls if plot has continuous scales
+				if (!is.null(continuous_colour_palette_val) && continuous_colour_palette_val != "None") {
+					tagList(
+						h5("Continuous Color Scale"),
+						selectInput("ui_continuous_colour_palette", "Colour Palette",
+							choices = c("None", "viridis", "magma", "plasma", "inferno", "cividis"),
+							selected = continuous_colour_palette_val),
+						tags$hr()
+					)
+				} else if (!is.null(continuous_fill_palette_val) && continuous_fill_palette_val != "None") {
+					tagList(
+						h5("Continuous Fill Scale"),
+						selectInput("ui_continuous_fill_palette", "Fill Palette",
+							choices = c("None", "viridis", "magma", "plasma", "inferno", "cividis"),
+							selected = continuous_fill_palette_val),
+						tags$hr()
+					)
+				},
 				
-				# Discrete color palettes
-				h5("Discrete Color Palettes"),
-				selectInput("ui_palette", "Discrete Palette",
-					choices = c("None", "viridis", "magma", "plasma", "inferno", "cividis", "Set1", "Set2", "Set3", "Paired", "Dark2", "Accent"),
-					selected = palette_val),
-				tags$hr(),
-				if (!length(colour_lvls) && !length(fill_lvls)) tags$em("No discrete colour/fill levels detected yet."),
-				if (length(colour_lvls)) tagList(
-					tags$strong("Colour levels"),
-					lapply(seq_along(colour_lvls), function(i) {
-						lvl <- as.character(colour_lvls[i])
-						cur <- get_val("colour_levels_cols", rep(NA_character_, length(colour_lvls)))[i]
-						make_color_input(paste0("ui_col_level_", i), paste0("[", lvl, "]"), cur)
-					})
-				),
-				if (length(fill_lvls)) tagList(
-					tags$strong("Fill levels"),
-					lapply(seq_along(fill_lvls), function(i) {
-						lvl <- as.character(fill_lvls[i])
-						cur <- get_val("fill_levels_cols", rep(NA_character_, length(fill_lvls)))[i]
-						make_color_input(paste0("ui_fill_level_", i), paste0("[", lvl, "]"), cur)
-					})
-				)
+				# Show discrete controls only if plot has discrete levels
+				if (length(colour_lvls) > 0 || length(fill_lvls) > 0) {
+					tagList(
+						h5("Discrete Color Palettes"),
+						selectInput("ui_palette", "Discrete Palette",
+							choices = c("None", "viridis", "magma", "plasma", "inferno", "cividis", "Set1", "Set2", "Set3", "Paired", "Dark2", "Accent"),
+							selected = palette_val),
+						tags$hr(),
+						if (length(colour_lvls)) tagList(
+							tags$strong("Colour levels"),
+							lapply(seq_along(colour_lvls), function(i) {
+								tagList(
+									div(style="margin-bottom:4px;",
+										tags$span(colour_lvls[i], style="font-weight:bold; margin-right:8px;"),
+										make_color_input(paste0("ui_colour_", i), "", get_val(paste0("colour_levels_cols"), character(0))[i])
+									)
+								)
+							})
+						),
+						if (length(fill_lvls)) tagList(
+							tags$strong("Fill levels"),
+							lapply(seq_along(fill_lvls), function(i) {
+								tagList(
+									div(style="margin-bottom:4px;",
+										tags$span(fill_lvls[i], style="font-weight:bold; margin-right:8px;"),
+										make_color_input(paste0("ui_fill_", i), "", get_val(paste0("fill_levels_cols"), character(0))[i])
+									)
+								)
+							})
+						)
+					)
+				} else {
+					tags$em("No discrete colour/fill levels detected.")
+				}
 			)
 		)
 	)
@@ -378,9 +398,9 @@ register_theme_observers <- function(input, rv, session) {
 		# Simple observers that only update when there's a valid new color
 		if (!is.null(e$colour_levels) && length(e$colour_levels)) {
 			lapply(seq_along(e$colour_levels), function(i) {
-				observeEvent(input[[paste0("ui_col_level_", i)]], {
+				observeEvent(input[[paste0("ui_colour_", i)]], {
 					if (rv$is_hydrating) return()
-					new_color <- input[[paste0("ui_col_level_", i)]]
+					new_color <- input[[paste0("ui_colour_", i)]]
 					# Only update if we have a valid color and it's different from current
 					if (!is.null(new_color) && nzchar(new_color) && 
 						(is.null(e$colour_levels_cols[i]) || e$colour_levels_cols[i] != new_color)) {
@@ -392,9 +412,9 @@ register_theme_observers <- function(input, rv, session) {
 		
 		if (!is.null(e$fill_levels) && length(e$fill_levels)) {
 			lapply(seq_along(e$fill_levels), function(i) {
-				observeEvent(input[[paste0("ui_fill_level_", i)]], {
+				observeEvent(input[[paste0("ui_fill_", i)]], {
 					if (rv$is_hydrating) return()
-					new_color <- input[[paste0("ui_fill_level_", i)]]
+					new_color <- input[[paste0("ui_fill_", i)]]
 					# Only update if we have a valid color and it's different from current
 					if (!is.null(new_color) && nzchar(new_color) && 
 						(is.null(e$fill_levels_cols[i]) || e$fill_levels_cols[i] != new_color)) {

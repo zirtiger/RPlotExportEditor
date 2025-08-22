@@ -285,18 +285,6 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				list(levels = levels, colors = colors)
 			}
 			
-			col_result <- extract_levels_from_plot(p, "colour")
-			fill_result <- extract_levels_from_plot(p, "fill")
-			
-			if (length(col_result$levels)) {
-				rv[[orig_bucket]][[name]]$colour_levels <- col_result$levels
-				rv[[orig_bucket]][[name]]$colour_levels_cols <- col_result$colors
-			}
-			if (length(fill_result$levels)) {
-				rv[[orig_bucket]][[name]]$fill_levels <- fill_result$levels
-				rv[[orig_bucket]][[name]]$fill_levels_cols <- fill_result$colors
-			}
-			
 			# Check for continuous color scales
 			continuous_colour_palette <- NULL
 			continuous_fill_palette <- NULL
@@ -315,13 +303,36 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				}
 			}
 			
+			# Extract discrete levels only if no continuous scales
+			colour_result <- if (is.null(continuous_colour_palette)) {
+				extract_levels_from_plot(p, "colour")
+			} else {
+				list(levels = character(0), colors = character(0))
+			}
+			
+			fill_result <- if (is.null(continuous_fill_palette)) {
+				extract_levels_from_plot(p, "fill")
+			} else {
+				list(levels = character(0), colors = character(0))
+			}
+			
 			cat("  Final color settings:\n")
-			cat("    colour_levels:", paste(col_result$levels, collapse = ", "), "\n")
-			cat("    colour_levels_cols:", paste(col_result$colors, collapse = ", "), "\n")
+			cat("    colour_levels:", paste(colour_result$levels, collapse = ", "), "\n")
+			cat("    colour_levels_cols:", paste(colour_result$colors, collapse = ", "), "\n")
 			cat("    fill_levels:", paste(fill_result$levels, collapse = ", "), "\n")
 			cat("    fill_levels_cols:", paste(fill_result$colors, collapse = ", "), "\n")
 			cat("    continuous_colour_palette:", continuous_colour_palette, "\n")
 			cat("    continuous_fill_palette:", continuous_fill_palette, "\n")
+			
+			# Store color results in originals
+			if (length(colour_result$levels)) {
+				rv[[orig_bucket]][[name]]$colour_levels <- colour_result$levels
+				rv[[orig_bucket]][[name]]$colour_levels_cols <- colour_result$colors
+			}
+			if (length(fill_result$levels)) {
+				rv[[orig_bucket]][[name]]$fill_levels <- fill_result$levels
+				rv[[orig_bucket]][[name]]$fill_levels_cols <- fill_result$colors
+			}
 		}
 		
 		# Don't automatically initialize edits - let the UI load from originals
