@@ -71,69 +71,8 @@ app_server <- function(input, output, session) {
     if (identical(rv$active_tab, "Grid")) {
       updateTabItems(session, "mainmenu", "grid")
     } else if (length(rv$plots) > 0) {
-      # For plot tabs, ensure we have fresh edits
+      # For plot tabs, ensure we have fresh edits for this specific plot
       ensure_edits(rv, rv$active_tab, grid = FALSE)
-      
-      # Only reload color levels if they haven't been set yet for this plot
-      if (!is.null(rv$edits[[rv$active_tab]]) && 
-          (is.null(rv$edits[[rv$active_tab]]$colour_levels) || 
-           is.null(rv$edits[[rv$active_tab]]$fill_levels))) {
-        
-        # Extract current levels and colors from the plot
-        p <- rv$plots[[rv$active_tab]]
-        if (!is.null(p)) {
-          extract_levels_from_plot <- function(p, aes_name) {
-            if (!requireNamespace("rlang", quietly = TRUE)) return(character(0))
-            collect <- character(0)
-            alt_aes <- if (identical(aes_name, "colour")) "color" else aes_name
-            get_expr <- function(mapping) {
-              if (is.null(mapping)) return(NULL)
-              if (!is.null(mapping[[aes_name]])) return(mapping[[aes_name]])
-              if (!is.null(mapping[[alt_aes]])) return(mapping[[alt_aes]])
-              NULL
-            }
-            eval_on <- function(dat, expr) {
-              if (is.null(expr) || is.null(dat)) return(NULL)
-              if (!is.data.frame(dat) || nrow(dat) == 0) return(NULL)
-              vals <- try(rlang::eval_tidy(expr, data = dat), silent = TRUE)
-              if (inherits(vals, "try-error") || is.null(vals)) return(NULL)
-              vals
-            }
-            append_vals <- function(vals) {
-              if (is.null(vals)) return()
-              vals <- vals[!is.na(vals)]
-              if (is.factor(vals)) collect <<- c(collect, as.character(levels(vals))) else collect <<- c(collect, unique(as.character(vals)))
-            }
-            expr_p <- get_expr(p$mapping)
-            append_vals(eval_on(p$data, expr_p))
-            if (!is.null(p$layers) && length(p$layers)) {
-              for (ly in p$layers) {
-                expr_l <- get_expr(ly$mapping) %||% expr_p
-                append_vals(eval_on(ly$data %||% p$data, expr_l))
-              }
-            }
-            unique(collect[nzchar(collect)])
-          }
-          
-          # Only set levels if they don't exist yet
-          if (is.null(rv$edits[[rv$active_tab]]$colour_levels)) {
-            col_lvls <- extract_levels_from_plot(p, "colour")
-            if (length(col_lvls)) {
-              rv$edits[[rv$active_tab]]$colour_levels <- col_lvls
-              # Don't set colors yet - let the user choose or preserve original
-            }
-          }
-          
-          if (is.null(rv$edits[[rv$active_tab]]$fill_levels)) {
-            fill_lvls <- extract_levels_from_plot(p, "fill")
-            if (length(fill_lvls)) {
-              rv$edits[[rv$active_tab]]$fill_levels <- fill_lvls
-              # Don't set colors yet - let the user choose or preserve original
-            }
-          }
-        }
-      }
-      
       updateTabItems(session, "mainmenu", rv$last_mainmenu %||% "text")
     }
   }, ignoreInit = FALSE)
