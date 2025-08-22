@@ -262,21 +262,27 @@ register_theme_observers <- function(input, rv, session) {
 		}
 	}, ignoreInit = TRUE)
 	
-	# Dynamic level color pickers
+	# Dynamic level color pickers with debouncing
 	observe({
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
 		e <- rv$edits[[ap]]
 		if (!is.null(e$colour_levels) && length(e$colour_levels)) {
 			lapply(seq_along(e$colour_levels), function(i) {
-				observeEvent(input[[paste0("ui_col_level_", i)]], {
-					rv$edits[[ap]]$colour_levels_cols[i] <- input[[paste0("ui_col_level_", i)]]
+				# Create debounced observer for each color picker
+				debounced_input <- debounce(reactive(input[[paste0("ui_col_level_", i)]]), 1000)
+				observeEvent(debounced_input(), {
+					if (rv$is_hydrating) return()
+					rv$edits[[ap]]$colour_levels_cols[i] <- debounced_input()
 				}, ignoreInit = TRUE, ignoreNULL = TRUE)
 			})
 		}
 		if (!is.null(e$fill_levels) && length(e$fill_levels)) {
 			lapply(seq_along(e$fill_levels), function(i) {
-				observeEvent(input[[paste0("ui_fill_level_", i)]], {
-					rv$edits[[ap]]$fill_levels_cols[i] <- input[[paste0("ui_fill_level_", i)]]
+				# Create debounced observer for each fill picker
+				debounced_input <- debounce(reactive(input[[paste0("ui_fill_level_", i)]]), 1000)
+				observeEvent(debounced_input(), {
+					if (rv$is_hydrating) return()
+					rv$edits[[ap]]$fill_levels_cols[i] <- debounced_input()
 				}, ignoreInit = TRUE, ignoreNULL = TRUE)
 			})
 		}
