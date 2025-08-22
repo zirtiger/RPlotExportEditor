@@ -1,397 +1,49 @@
-/* Custom styles for Plot Editor */
+/* Compact, safe styles for Plot Editor (no layout resets) */
 
-/* Make tabs more compact */
+/***** Tabs *****/
 .nav-tabs > li > a {
   padding: 6px 12px;
   font-size: 12px;
 }
 
-/* Reduce spacing in the sidebar */
+/***** Boxes and spacing *****/
+.box { /* keep default borders/shadows so layout remains intact */ }
+.box-header { /* keep default header spacing */ }
 .box-body {
-  padding: 10px;
+  padding: 10px; /* slightly compact, but not zero to avoid cramped UI */
 }
 
-/* Make form controls more compact */
-.form-group {
-  margin-bottom: 8px;
-}
-
+/***** Forms *****/
+.form-group { margin-bottom: 8px; }
 .form-control {
   padding: 4px 8px;
   font-size: 12px;
   height: auto;
 }
 
-/* Reduce margins for headings */
-h4, h5 {
-  margin-top: 15px;
-  margin-bottom: 10px;
-}
+/***** Headings *****/
+h4, h5 { margin-top: 15px; margin-bottom: 10px; }
 
-/* Make sliders more compact */
-.irs--shiny .irs-line {
-  height: 3px;
-}
+/***** Sliders (shinyWidgets/ion.rangeSlider theme) *****/
+.irs--shiny .irs-line { height: 3px; }
+.irs--shiny .irs-bar  { height: 3px; }
+.irs--shiny .irs-handle { width: 12px; height: 12px; }
 
-.irs--shiny .irs-bar {
-  height: 3px;
-}
+/***** Buttons *****/
+.btn { padding: 4px 8px; font-size: 12px; }
+.btn-sm { padding: 2px 6px; font-size: 11px; }
 
-.irs--shiny .irs-handle {
-  width: 12px;
-  height: 12px;
-}
+/***** Numeric inputs *****/
+input[type="number"] { padding: 4px 6px; font-size: 12px; }
 
-/* Reduce spacing between elements */
-hr {
-  margin: 10px 0;
-}
+/***** Checkboxes / radios *****/
+.checkbox, .radio { margin-top: 5px; margin-bottom: 5px; }
 
-/* Make buttons more compact */
-.btn {
-  padding: 4px 8px;
-  font-size: 12px;
-}
+/***** Tab panel content *****/
+.tab-pane { padding: 10px 0; }
 
-.btn-sm {
-  padding: 2px 6px;
-  font-size: 11px;
-}
-
-/* Improve tab panel spacing */
-.tab-pane {
-  padding: 10px 0;
-}
-
-/* Make numeric inputs more compact */
-input[type="number"] {
-  padding: 4px 6px;
-  font-size: 12px;
-}
-
-/* Improve checkbox and select spacing */
-.checkbox, .radio {
-  margin-top: 5px;
-  margin-bottom: 5px;
-}
-
-/* Make the sidebar more compact overall */
-.sidebar {
-  font-size: 12px;
-}
-
-/* Reduce padding in the main content area */
-.content-wrapper {
-  padding: 0;
-}
-
-/* Remove all padding from main content */
-.main-content {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from the dashboard body */
-.dashboard-body {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from fluid rows */
-.fluid-row {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from columns */
-.col-sm-3, .col-sm-9 {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from the options sidebar */
-#subsidebar {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from the options sidebar content */
-#subsidebar > * {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from the options sidebar divs */
-#subsidebar div {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from the options sidebar form elements */
-#subsidebar .form-group,
-#subsidebar .form-control,
-#subsidebar .btn,
-#subsidebar .checkbox,
-#subsidebar .radio,
-#subsidebar select,
-#subsidebar input,
-#subsidebar textarea {
-  margin: 0 !important;
-}
-
-/* Only add small margins between form groups for readability */
-#subsidebar .form-group + .form-group {
-  margin-top: 8px !important;
-}
-
-/* Remove padding from the tabs area */
-#tabs_area {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from the tabs area content */
-#tabs_area > * {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from tab panels */
-#tabs_area .tab-pane {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from tab content */
-#tabs_area .tab-content {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from the plot outputs */
-#tabs_area .shiny-plot-output,
-#tabs_area .shiny-image-output {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Ensure plots take full width and height */
-#tabs_area img {
-  width: 100% !important;
-  height: auto !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Make the interface completely borderless */
-.box {
-  border: none !important;
-  box-shadow: none !important;
-  margin: 0 !important;
-}
-
-/* Remove any default margins from the body */
-body {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Override shinydashboard default padding */
-.skin-blue .main-header,
-.skin-blue .main-sidebar,
-.skin-blue .content-wrapper,
-.skin-blue .main-footer {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from tab panels */
-.tab-pane {
-  padding: 0 !important;
-}
-
-/* Remove padding from tab content */
-.tab-content {
-  padding: 0 !important;
-}
-
-/* Remove padding from the main dashboard page */
-.dashboard-page {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Ensure no spacing between elements */
-* {
-  box-sizing: border-box;
-}
-
-/* Remove any default spacing from shiny elements */
-.shiny-plot-output {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Remove spacing from image outputs */
-.shiny-image-output {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Remove padding from tabsetPanel */
-.tabset-panel {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from individual tabs */
-.tab-pane {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from tab navigation */
-.nav-tabs {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Remove padding from tab navigation items */
-.nav-tabs > li {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.nav-tabs > li > a {
-  margin: 0 !important;
-  padding: 6px 12px !important;
-}
-
-/* Remove padding from tab content area */
-.tab-content {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Remove padding from individual tab panels */
-.tab-pane {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Remove padding from the main tabset */
-.tabset-panel {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Remove padding from tab content */
-.tab-content {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Final override to ensure no padding anywhere */
-.dashboard-page *,
-.content-wrapper *,
-.main-content *,
-.fluid-row *,
-.col-sm-3 *,
-.col-sm-9 * {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* But allow some spacing for form elements for usability */
-.form-group {
-  margin-bottom: 8px !important;
-}
-
-.form-control {
-  margin-bottom: 5px !important;
-}
-
-.btn {
-  margin-bottom: 5px !important;
-}
-
-/* Ensure tabs have minimal but usable spacing */
-.nav-tabs > li > a {
-  padding: 6px 12px !important;
-  margin: 0 !important;
-}
-
-/* Ensure plot outputs have no padding */
-.plot-container {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove any default spacing from the main dashboard */
-.dashboard-page {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Override any default margins from fluidRow */
-.fluid-row {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Override any default margins from columns */
-.col-sm-3, .col-sm-9, .col-md-3, .col-md-9 {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Override shinydashboard specific styling */
-.dashboard-page .content-wrapper {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-.dashboard-page .main-content {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove any default spacing from the dashboard header */
-.main-header {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Remove any default spacing from the dashboard sidebar */
-.main-sidebar {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Ensure the main content area has no padding */
-.content {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from any container elements */
-.container, .container-fluid {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Remove padding from any row elements */
-.row {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Make the grid cell selectors more compact */
-#grid_tabs .form-group {
-  margin-bottom: 5px;
-}
-
-#grid_tabs .form-control {
-  font-size: 11px;
-  padding: 2px 4px;
+/***** Plot/image outputs: remove extra gaps inside boxes only *****/
+.box .shiny-plot-output,
+.box .shiny-image-output {
+  margin: 0; /* rely on box-body padding */
 }

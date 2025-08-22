@@ -24,20 +24,21 @@ app_ui <- function(request = NULL) {
     if (file.exists("www/script.js")) includeScript("www/script.js"),
     
     fluidRow(
-      style = "margin: 0; padding: 0;",
       column(
         width = 3,
-        style = "padding: 0; margin: 0;",
-        div(
-          style = "height: 90vh; background: white; border: none; padding: 0; margin: 0;",
+        shinydashboard::box(
+          title = "Settings",
+          width = 12, status = "primary", solidHeader = TRUE,
+          height = "90vh",
           uiOutput("subsidebar")   # pane content (Grid/Export/Text/Theme)
         )
       ),
       column(
         width = 9,
-        style = "padding: 0; margin: 0;",
-        div(
-          style = "height: 90vh; background: white; border: none; padding: 0; margin: 0;",
+        shinydashboard::box(
+          title = "Plots",
+          width = 12, status = "primary", solidHeader = TRUE,
+          height = "90vh",
           uiOutput("tabs_area")    # Grid + one tab per plot (previews)
         )
       )
