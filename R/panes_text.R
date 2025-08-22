@@ -27,6 +27,9 @@ text_pane_ui <- function(rv) {
   subtitle_now <- e$subtitle %||% get_lab("subtitle")
   caption_now  <- e$caption  %||% get_lab("caption")
   
+  grid_major_on <- isTRUE(e$grid_major)
+  grid_minor_on <- isTRUE(e$grid_minor)
+  
   tagList(
     actionButton("apply_all_text", "Use for all plots", class = "btn btn-sm btn-default btn-block"),
     tags$hr(),
@@ -81,13 +84,17 @@ text_pane_ui <- function(rv) {
         ),
         tags$hr(),
         h5("Steps"),
-        fluidRow(
-          column(6, numericInput("ui_x_step_minor", "X minor step", value = e$x_step_minor, min = 0, step = 0.1)),
-          column(6, numericInput("ui_x_step_major", "X major step", value = e$x_step_major, min = 0, step = 0.1))
+        div(class = if (grid_major_on) NULL else "muted-control",
+            fluidRow(
+              column(6, numericInput("ui_x_step_major", "X major", value = e$x_step_major, min = 0, step = 0.1)),
+              column(6, numericInput("ui_y_step_major", "Y major", value = e$y_step_major, min = 0, step = 0.1))
+            )
         ),
-        fluidRow(
-          column(6, numericInput("ui_y_step_minor", "Y minor step", value = e$y_step_minor, min = 0, step = 0.1)),
-          column(6, numericInput("ui_y_step_major", "Y major step", value = e$y_step_major, min = 0, step = 0.1))
+        div(class = if (grid_minor_on) NULL else "muted-control",
+            fluidRow(
+              column(6, numericInput("ui_x_step_minor", "X minor", value = e$x_step_minor, min = 0, step = 0.1)),
+              column(6, numericInput("ui_y_step_minor", "Y minor", value = e$y_step_minor, min = 0, step = 0.1))
+            )
         )
       )
     )

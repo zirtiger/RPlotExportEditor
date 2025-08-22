@@ -11,18 +11,17 @@ app_server <- function(input, output, session) {
   rv <- init_reactive_state()
   rv$active_tab  <- "Grid"
   rv$is_hydrating <- FALSE
-  rv$last_mainmenu <- "grid"
+  rv$last_mainmenu <- "text"  # prefer Text by default on plot tabs
   
   # --- Menu item activation logic --------------------------------------
-  # Determine which menu items should be active based on current context
   menu_activation <- reactive({
     active_tab <- rv$active_tab
     has_plots <- length(rv$plots) > 0
     list(
-      grid = TRUE,
-      export = has_plots,
-      text = has_plots && active_tab != "Grid",
-      theme = has_plots && active_tab != "Grid"
+      grid  = identical(active_tab, "Grid"),
+      export= has_plots,
+      text  = has_plots && !identical(active_tab, "Grid"),
+      theme = has_plots && !identical(active_tab, "Grid")
     )
   })
   
@@ -33,8 +32,8 @@ app_server <- function(input, output, session) {
       if (isTRUE(active)) return(item)
       htmltools::tagAppendAttributes(item, class = "disabled-item")
     }
-    shinydashboard::sidebarMenu(id = "mainmenu",
-      add_disabled(shinydashboard::menuItem("Grid",   tabName = "grid",   icon = icon("th")), ma$grid),
+    items <- list(
+      if (isTRUE(ma$grid)) add_disabled(shinydashboard::menuItem("Grid",   tabName = "grid",   icon = icon("th")), ma$grid),
       add_disabled(shinydashboard::menuItem("Export", tabName = "export", icon = icon("download")), ma$export),
       add_disabled(shinydashboard::menuItem("Text",   tabName = "text",   icon = icon("font")), ma$text),
       add_disabled(shinydashboard::menuItem("Theme",  tabName = "theme",  icon = icon("paint-brush")), ma$theme),
@@ -42,6 +41,7 @@ app_server <- function(input, output, session) {
       fileInput("plots_rds", "Load ggplot (.rds, multiple)", accept = ".rds", multiple = TRUE),
       actionButton("load_demo", "Load 3 demo plots", class = "btn btn-link")
     )
+    do.call(shinydashboard::sidebarMenu, c(list(id = "mainmenu"), items))
   })
   
   # Persist and guard mainmenu selection
@@ -50,15 +50,28 @@ app_server <- function(input, output, session) {
     blocked <- c(
       if (!isTRUE(ma$export)) "export" else NULL,
       if (!isTRUE(ma$text))   "text"   else NULL,
-      if (!isTRUE(ma$theme))  "theme"  else NULL
+      if (!isTRUE(ma$theme))  "theme"  else NULL,
+      if (!isTRUE(ma$grid))   "grid"   else NULL
     )
     if (!is.null(input$mainmenu) && input$mainmenu %in% blocked) {
-      target <- rv$last_mainmenu %||% "grid"
+      # choose best allowed target
+      allowed <- names(Filter(isTRUE, ma))
+      pref <- rv$last_mainmenu
+      target <- if (!is.null(pref) && pref %in% allowed) pref else if (length(allowed)) allowed[[1]] else "grid"
       updateTabItems(session, "mainmenu", target)
     } else if (!is.null(input$mainmenu)) {
       rv$last_mainmenu <- input$mainmenu
     }
   }, ignoreInit = FALSE)
+  
+  # Keep mainmenu selection stable when switching plot tabs
+  observeEvent(rv$active_tab, {
+    ma <- menu_activation()
+    allowed <- names(Filter(isTRUE, ma))
+    pref <- rv$last_mainmenu
+    target <- if (!is.null(pref) && pref %in% allowed) pref else if (length(allowed)) allowed[[1]] else NULL
+    if (!is.null(target)) updateTabItems(session, "mainmenu", target)
+  }, ignoreInit = TRUE)
   
   # --- Demo loader & .rds loader --------------------------------------
   observeEvent(input$load_demo, {
@@ -76,7 +89,6 @@ app_server <- function(input, output, session) {
     )
     lapply(names(rv$plots), function(nm) ensure_edits(rv, nm))
     select_first_plot(rv, session)
-    isolate({ updateTabItems(session, "mainmenu", rv$last_mainmenu %||% "grid") })
   }, ignoreInit = TRUE)
   
   observeEvent(input$plots_rds, {
@@ -91,7 +103,6 @@ app_server <- function(input, output, session) {
       }
     }
     select_first_plot(rv, session)
-    isolate({ updateTabItems(session, "mainmenu", rv$last_mainmenu %||% "grid") })
   }, ignoreInit = TRUE)
   
   # --- Tabs & previews -------------------------------------------------
