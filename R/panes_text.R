@@ -32,6 +32,7 @@ text_pane_ui <- function(rv) {
     # Use tabs for better organization
     tabsetPanel(
       id = "text_tabs",
+      selected = rv$tabs$text %||% "Labels",
       tabPanel("Labels", 
         textInput("ui_title",    "Title",    e$title    %||% get_lab("title")),
         textInput("ui_subtitle", "Subtitle", e$subtitle %||% get_lab("subtitle")),
@@ -62,7 +63,7 @@ text_pane_ui <- function(rv) {
                    value = e$legend_text_size %||% BASE$legend_text_size, 
                    min = 6, max = 18, step = 1)
       ),
-      tabPanel("Axis Limits",
+      tabPanel("Axis",
         fluidRow(
           column(6, numericInput("ui_x_min", "X min", value = e$x_min, step = 0.1)),
           column(6, numericInput("ui_x_max", "X max", value = e$x_max, step = 0.1))
@@ -70,9 +71,8 @@ text_pane_ui <- function(rv) {
         fluidRow(
           column(6, numericInput("ui_y_min", "Y min", value = e$y_min, step = 0.1)),
           column(6, numericInput("ui_y_max", "Y max", value = e$y_max, step = 0.1))
-        )
-      ),
-      tabPanel("Axis Breaks",
+        ),
+        tags$hr(),
         fluidRow(
           column(6, numericInput("ui_x_major", "X major", value = e$x_major, min = 1, step = 1)),
           column(6, numericInput("ui_x_minor", "X minor", value = e$x_minor, min = 0, step = 1))
@@ -102,6 +102,11 @@ register_text_observers <- function(input, rv, session) {
       }
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
+  
+  # Persist selected sub-tab
+  observeEvent(input$text_tabs, {
+    rv$tabs$text <- input$text_tabs
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Basic text labels
   bind_edit("ui_title",    "title")

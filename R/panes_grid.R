@@ -29,6 +29,7 @@ grid_pane_ui <- function(rv) {
     # Use tabs for better organization
     tabsetPanel(
       id = "grid_tabs",
+      selected = rv$tabs$grid %||% "Layout",
       tabPanel("Layout",
         fluidRow(
           column(6, numericInput("ui_grid_rows", "Rows", value = r, min = 1, max = 10, step = 1)),
@@ -65,6 +66,11 @@ register_grid_observers <- function(input, rv, session) {
   
   observeEvent(input$ui_grid_legend, {
     rv$grid$legend <- legend_pos_value(input$ui_grid_legend)
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  
+  # Persist selected sub-tab
+  observeEvent(input$grid_tabs, {
+    rv$tabs$grid <- input$grid_tabs
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Persist cell assignments

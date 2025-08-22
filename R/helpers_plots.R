@@ -132,13 +132,13 @@ apply_edits <- function(p, edits) {
     
     if (!is.null(e$grid_major)) {
       legend_theme <- legend_theme + ggplot2::theme(
-        panel.grid.major = if (e$grid_major) ggplot2::element_line(color = grid_color) else ggplot2::element_blank()
+        panel.grid.major = if (e$grid_major) ggplot2::element_line(color = grid_color, linetype = (e$grid_major_linetype %||% "solid")) else ggplot2::element_blank()
       )
     }
     
     if (!is.null(e$grid_minor)) {
       legend_theme <- legend_theme + ggplot2::theme(
-        panel.grid.minor = if (e$grid_minor) ggplot2::element_line(color = grid_color, linetype = "dashed") else ggplot2::element_blank()
+        panel.grid.minor = if (e$grid_minor) ggplot2::element_line(color = grid_color, linetype = (e$grid_minor_linetype %||% "dashed")) else ggplot2::element_blank()
       )
     }
   }

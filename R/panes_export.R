@@ -11,7 +11,8 @@ export_pane_ui <- function(rv) {
       
       # Use tabs for better organization
       tabsetPanel(
-        id = "grid_export_tabs",
+        id = "export_tabs",
+        selected = rv$tabs$export %||% "Dimensions",
         tabPanel("Dimensions",
           fluidRow(
             column(6, sliderInput("ui_gridexp_w", "Width (mm)", 
@@ -60,6 +61,7 @@ export_pane_ui <- function(rv) {
     # Use tabs for better organization
     tabsetPanel(
       id = "export_tabs",
+      selected = rv$tabs$export %||% "Dimensions",
       tabPanel("Dimensions",
         fluidRow(
           column(6, sliderInput("ui_exp_width", "Width (mm)", 
@@ -117,28 +119,25 @@ register_export_observers <- function(input, rv, session) {
     }
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
-  observeEvent(input$ui_gridexp_f, { 
-    rv$grid_export$format <- input$ui_gridexp_f 
+  observeEvent(input$ui_gridexp_f, {
+    rv$grid_export$format <- input$ui_gridexp_f
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
-  # Plot export writers
+  # Per-plot export writers
   observeEvent(input$ui_exp_width, {
-    ap <- rv$active_tab
-    if (is.null(ap) || identical(ap,"Grid") || is.null(rv$plots[[ap]])) return()
+    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
     rv$export[[ap]]$width_mm <- as_num_safe(input$ui_exp_width)
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   observeEvent(input$ui_exp_height, {
-    ap <- rv$active_tab
-    if (is.null(ap) || identical(ap,"Grid") || is.null(rv$plots[[ap]])) return()
+    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
     rv$export[[ap]]$height_mm <- as_num_safe(input$ui_exp_height)
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   observeEvent(input$ui_exp_dpi, {
-    ap <- rv$active_tab
-    if (is.null(ap) || identical(ap,"Grid") || is.null(rv$plots[[ap]])) return()
+    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
     if (input$ui_exp_dpi == "custom") {
       rv$export[[ap]]$dpi <- as_num_safe(input$ui_exp_dpi_custom)
@@ -148,8 +147,7 @@ register_export_observers <- function(input, rv, session) {
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   observeEvent(input$ui_exp_dpi_custom, {
-    ap <- rv$active_tab
-    if (is.null(ap) || identical(ap,"Grid") || is.null(rv$plots[[ap]])) return()
+    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
     if (input$ui_exp_dpi == "custom") {
       rv$export[[ap]]$dpi <- as_num_safe(input$ui_exp_dpi_custom)
@@ -157,26 +155,26 @@ register_export_observers <- function(input, rv, session) {
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   observeEvent(input$ui_exp_format, {
-    ap <- rv$active_tab
-    if (is.null(ap) || identical(ap,"Grid") || is.null(rv$plots[[ap]])) return()
+    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
-    rv$export[[ap]]$format <- input$ui_exp_format
+    rv$export[[ap]]$format <- toupper(input$ui_exp_format)
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   observeEvent(input$apply_all_export, {
     ap <- rv$active_tab
-    if (is.null(ap) || identical(ap,"Grid") || is.null(rv$plots[[ap]])) return()
+    if (is.null(ap) || identical(ap, "Grid") || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
     src <- rv$export[[ap]]
+    export_fields <- c("width_mm","height_mm","dpi","format")
     for (nm in names(rv$plots)) {
       ensure_edits(rv, nm, grid = FALSE)
-      rv$export[[nm]] <- list(
-        width_mm  = src$width_mm  %||% BASE$width_mm,
-        height_mm = src$height_mm %||% BASE$height_mm,
-        dpi       = src$dpi       %||% BASE$dpi,
-        format    = src$format    %||% BASE$format
-      )
+      rv$export[[nm]][export_fields] <- src[export_fields]
     }
     showNotification("Export settings applied to all plots.", type = "message")
   })
+  
+  # Persist selected sub-tab
+  observeEvent(input$export_tabs, {
+    rv$tabs$export <- input$export_tabs
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
 }
