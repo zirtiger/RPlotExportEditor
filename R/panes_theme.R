@@ -13,12 +13,33 @@ theme_pane_ui <- function(rv) {
 	if (is.null(ap) || is.null(rv$plots[[ap]])) return(tagList(h4("Theme"), helpText("Select a plot tab.")))
 	
 	ensure_edits(rv, ap, grid = FALSE)
-	e <- rv$edits[[ap]]
-	p <- rv$plots[[ap]]
 	
-	grid_major_on <- isTRUE(e$grid_major)
-	grid_minor_on <- isTRUE(e$grid_minor)
-	legend_box_on <- isTRUE(e$legend_box)
+	# Use helper function to get current values
+	get_val <- function(setting, default = NULL) {
+		get_current_value(rv, ap, setting, default)
+	}
+	
+	# Get current values
+	theme_val <- get_val("theme", BASE$theme)
+	base_size_val <- get_val("base_size", BASE$base_size)
+	legend_pos_val <- get_val("legend_pos", BASE$legend_pos)
+	legend_box_val <- get_val("legend_box", FALSE)
+	panel_bg_val <- get_val("panel_bg", "Default")
+	plot_bg_val <- get_val("plot_bg", "Default")
+	grid_major_val <- get_val("grid_major", TRUE)
+	grid_minor_val <- get_val("grid_minor", TRUE)
+	grid_color_val <- get_val("grid_color", "Default")
+	grid_major_linetype_val <- get_val("grid_major_linetype", "solid")
+	grid_minor_linetype_val <- get_val("grid_minor_linetype", "dashed")
+	palette_val <- get_val("palette", "None")
+	
+	# Get color levels from current values
+	colour_lvls <- get_val("colour_levels", character(0))
+	fill_lvls <- get_val("fill_levels", character(0))
+	
+	grid_major_on <- isTRUE(grid_major_val)
+	grid_minor_on <- isTRUE(grid_minor_val)
+	legend_box_on <- isTRUE(legend_box_val)
 	
 	# Detect discrete levels by inspecting mappings and data (evaluate aes on data)
 	extract_levels_from_plot <- function(p, aes_name) {
@@ -55,8 +76,6 @@ theme_pane_ui <- function(rv) {
 		}
 		unique(collect[nzchar(collect)])
 	}
-	colour_lvls <- e$colour_levels %||% extract_levels_from_plot(p, "colour")
-	fill_lvls   <- e$fill_levels   %||% extract_levels_from_plot(p, "fill")
 	
 	make_color_input <- function(id, label, value) {
 		if (requireNamespace("colourpicker", quietly = TRUE)) {
@@ -79,65 +98,68 @@ theme_pane_ui <- function(rv) {
 			tabPanel("Base",
 				selectInput("ui_theme", "Theme",
 						choices = c("theme_minimal","theme_classic","theme_bw","theme_light","theme_gray"),
-						selected = e$theme %||% BASE$theme),
+						selected = theme_val),
 				sliderInput("ui_base_size", "Base text size", 
-						value = e$base_size %||% BASE$base_size, 
+						value = base_size_val, 
 						min = 6, max = 30, step = 1)
 			),
 			tabPanel("Legend",
 				selectInput("ui_legend_pos", "Legend position", 
 						choices = LEGEND_POS, 
-						selected = e$legend_pos %||% BASE$legend_pos),
+						selected = legend_pos_val),
 				checkboxInput("ui_legend_box", "Legend box", 
-							value = isTRUE(e$legend_box)),
+							value = legend_box_val),
 				div(class = if (legend_box_on) NULL else "muted-control",
 					p(class="help-block", "Legend box must be enabled for these settings to show."))
 			),
 			tabPanel("Background",
 				selectInput("ui_panel_bg", "Panel background", 
 						choices = c("Default", "White", "Gray", "Transparent"),
-						selected = e$panel_bg %||% "Default"),
+						selected = panel_bg_val),
 				selectInput("ui_plot_bg", "Plot background", 
 						choices = c("Default", "White", "Gray", "Transparent"),
-						selected = e$plot_bg %||% "Default")
+						selected = plot_bg_val)
 			),
 			tabPanel("Grid",
 				checkboxInput("ui_grid_major", "Major grid lines", 
-							value = isTRUE(e$grid_major)),
+							value = grid_major_val),
 				div(class = if (grid_major_on) NULL else "muted-control",
 					selectInput("ui_grid_major_linetype", "Major grid linetype",
 							choices = c("solid","dashed","dotted","dotdash","longdash","twodash"),
-							selected = e$grid_major_linetype %||% "solid")),
+							selected = grid_major_linetype_val)),
 				checkboxInput("ui_grid_minor", "Minor grid lines", 
-							value = isTRUE(e$grid_minor)),
+							value = grid_minor_val),
 				div(class = if (grid_minor_on) NULL else "muted-control",
 					selectInput("ui_grid_minor_linetype", "Minor grid linetype",
 							choices = c("solid","dashed","dotted","dotdash","longdash","twodash"),
-							selected = e$grid_minor_linetype %||% "dashed")),
+							selected = grid_minor_linetype_val)),
 				selectInput("ui_grid_color", "Grid color", 
 						choices = c("Default", "Gray", "Light gray", "Dark gray", "Black"),
-						selected = e$grid_color %||% "Default")
+						selected = grid_color_val)
 			),
 			tabPanel("Colors",
-				selectInput("ui_palette", "Palette", 
-						choices = c("None","viridis","magma","plasma","inferno","cividis"),
-						selected = e$palette %||% "None"),
-				div(style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;",
+				div(style="display:flex; gap:8px; margin-bottom:8px;",
+					actionButton("ui_revert_colors", "Revert to Original", class = "btn btn-sm btn-warning"),
 					actionButton("ui_apply_palette_levels", "Generate colors for levels", class = "btn btn-sm btn-default")
 				),
+				selectInput("ui_palette", "Palette", 
+						choices = c("None","viridis","magma","plasma","inferno","cividis"),
+						selected = palette_val),
 				tags$hr(),
 				if (!length(colour_lvls) && !length(fill_lvls)) tags$em("No discrete colour/fill levels detected yet."),
 				if (length(colour_lvls)) tagList(
 					tags$strong("Colour levels"),
 					lapply(seq_along(colour_lvls), function(i) {
-						lvl <- as.character(colour_lvls[i]); cur <- (e$colour_levels_cols %||% rep(NA_character_, length(colour_lvls)))[i]
+						lvl <- as.character(colour_lvls[i])
+						cur <- get_val("colour_levels_cols", rep(NA_character_, length(colour_lvls)))[i]
 						make_color_input(paste0("ui_col_level_", i), paste0("[", lvl, "]"), cur)
 					})
 				),
 				if (length(fill_lvls)) tagList(
 					tags$strong("Fill levels"),
 					lapply(seq_along(fill_lvls), function(i) {
-						lvl <- as.character(fill_lvls[i]); cur <- (e$fill_levels_cols %||% rep(NA_character_, length(fill_lvls)))[i]
+						lvl <- as.character(fill_lvls[i])
+						cur <- get_val("fill_levels_cols", rep(NA_character_, length(fill_lvls)))[i]
 						make_color_input(paste0("ui_fill_level_", i), paste0("[", lvl, "]"), cur)
 					})
 				)
@@ -232,62 +254,53 @@ register_theme_observers <- function(input, rv, session) {
 		rv$edits[[ap]]$palette <- input$ui_palette
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
+	# Revert colors to original
+	observeEvent(input$ui_revert_colors, {
+		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+		ensure_edits(rv, ap, grid = FALSE)
+		
+		# Revert colour levels to original
+		if (!is.null(rv$originals[[ap]]$colour_levels_cols)) {
+			rv$edits[[ap]]$colour_levels_cols <- rv$originals[[ap]]$colour_levels_cols
+		}
+		
+		# Revert fill levels to original
+		if (!is.null(rv$originals[[ap]]$fill_levels_cols)) {
+			rv$edits[[ap]]$fill_levels_cols <- rv$originals[[ap]]$fill_levels_cols
+		}
+		
+		# Clear palette setting
+		rv$edits[[ap]]$palette <- "None"
+		
+		showNotification("Colors reverted to original", type = "message")
+	}, ignoreInit = TRUE)
+	
 	observeEvent(input$ui_apply_palette_levels, {
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		pal <- rv$edits[[ap]]$palette %||% "None"
 		
-		# Check if the plot has continuous scales that we can apply palette to directly
-		has_continuous_colour <- FALSE
-		has_continuous_fill <- FALSE
-		
-		tryCatch({
-			built <- ggplot2::ggplot_build(rv$plots[[ap]])
-			if (!is.null(built$data) && length(built$data) > 0) {
-				for (layer_data in built$data) {
-					if (is.data.frame(layer_data) && nrow(layer_data) > 0) {
-						# Check for continuous colour/fill
-						if ("colour" %in% names(layer_data) && is.numeric(layer_data$colour)) {
-							has_continuous_colour <- TRUE
-						}
-						if ("fill" %in% names(layer_data) && is.numeric(layer_data$fill)) {
-							has_continuous_fill <- TRUE
-						}
-					}
-				}
-			}
-		}, error = function(e) {
-			# If ggplot_build fails, assume discrete
-		})
-		
-		# For continuous scales, apply palette directly to the plot
-		if (has_continuous_colour && pal != "None") {
-			rv$edits[[ap]]$continuous_colour_palette <- pal
-		}
-		if (has_continuous_fill && pal != "None") {
-			rv$edits[[ap]]$continuous_fill_palette <- pal
-		}
-		
-		# For discrete levels, just generate colors for the existing level pickers
-		# Don't overwrite the level names, just update the colors
+		# Get current levels from the plot
 		e <- rv$edits[[ap]]
+		colour_lvls <- e$colour_levels %||% character(0)
+		fill_lvls <- e$fill_levels %||% character(0)
 		
 		# Generate colors for existing colour levels
-		if (!is.null(e$colour_levels) && length(e$colour_levels) > 0) {
+		if (length(colour_lvls) > 0) {
 			cols <- if (requireNamespace("viridisLite", quietly = TRUE)) {
-				viridisLite::viridis(length(e$colour_levels), option = if (pal == "None") "viridis" else pal)
+				viridisLite::viridis(length(colour_lvls), option = if (pal == "None") "viridis" else pal)
 			} else {
-				grDevices::rainbow(length(e$colour_levels))
+				grDevices::rainbow(length(colour_lvls))
 			}
 			rv$edits[[ap]]$colour_levels_cols <- cols
 		}
 		
 		# Generate colors for existing fill levels
-		if (!is.null(e$fill_levels) && length(e$fill_levels) > 0) {
+		if (length(fill_lvls) > 0) {
 			cols <- if (requireNamespace("viridisLite", quietly = TRUE)) {
-				viridisLite::viridis(length(e$fill_levels), option = if (pal == "None") "viridis" else pal)
+				viridisLite::viridis(length(fill_lvls), option = if (pal == "None") "viridis" else pal)
 			} else {
-				grDevices::rainbow(length(e$fill_levels))
+				grDevices::rainbow(length(fill_lvls))
 			}
 			rv$edits[[ap]]$fill_levels_cols <- cols
 		}
