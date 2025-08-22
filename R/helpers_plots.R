@@ -40,6 +40,7 @@ apply_edits <- function(p, edits) {
     }
     
     if (!is.null(e$continuous_fill_palette) && e$continuous_fill_palette != "None") {
+      cat("  Applying continuous FILL palette:", e$continuous_fill_palette, "\n")
       palette_func <- switch(e$continuous_fill_palette,
         "viridis" = viridisLite::viridis,
         "magma" = viridisLite::magma,
@@ -51,9 +52,11 @@ apply_edits <- function(p, edits) {
       p <- try_apply(p + ggplot2::scale_fill_viridis_c(option = e$continuous_fill_palette), p)
     }
     
-    # Apply discrete level colors
+    # Apply discrete level colors ONLY if no continuous scales are active
     # colour levels
-    if (!is.null(e$colour_levels) && !is.null(e$colour_levels_cols)) {
+    if (!is.null(e$colour_levels) && !is.null(e$colour_levels_cols) && 
+      (is.null(e$continuous_colour_palette) || e$continuous_colour_palette == "None")) {
+      cat("  Applying discrete COLOUR levels\n")
       lv <- as.character(e$colour_levels)
       cols <- as.character(e$colour_levels_cols)
       keep <- nzchar(lv) & nzchar(cols)
@@ -63,7 +66,9 @@ apply_edits <- function(p, edits) {
       }
     }
     # fill levels
-    if (!is.null(e$fill_levels) && !is.null(e$fill_levels_cols)) {
+    if (!is.null(e$fill_levels) && !is.null(e$fill_levels_cols) &&
+      (is.null(e$continuous_fill_palette) || e$continuous_fill_palette == "None")) {
+      cat("  Applying discrete FILL levels\n")
       lv <- as.character(e$fill_levels)
       cols <- as.character(e$fill_levels_cols)
       keep <- nzchar(lv) & nzchar(cols)
@@ -72,6 +77,7 @@ apply_edits <- function(p, edits) {
         p <- try_apply(p + ggplot2::scale_fill_manual(values = unname(cols), limits = lv, breaks = lv), p)
       }
     }
+    
     p
   }
   p <- apply_level_colors(p)

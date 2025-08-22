@@ -32,14 +32,17 @@ theme_pane_ui <- function(rv) {
 	grid_major_linetype_val <- get_val("grid_major_linetype", "solid")
 	grid_minor_linetype_val <- get_val("grid_minor_linetype", "dashed")
 	palette_val <- get_val("palette", "None")
+	continuous_colour_palette_val <- get_val("continuous_colour_palette", "None")
+	continuous_fill_palette_val <- get_val("continuous_fill_palette", "None")
 	
 	# Debug: Print what values are being loaded
 	cat("\n=== LOADING UI FOR PLOT:", ap, "===\n")
 	cat("  theme:", theme_val, "\n")
 	cat("  base_size:", base_size_val, "\n")
 	cat("  palette:", palette_val, "\n")
+	cat("  continuous_colour_palette:", continuous_colour_palette_val, "\n")
+	cat("  continuous_fill_palette:", continuous_fill_palette_val, "\n")
 	cat("  colour_levels:", paste(get_val("colour_levels", character(0)), collapse = ", "), "\n")
-	cat("  continuous_colour_palette:", get_val("continuous_colour_palette", "NULL"), "\n")
 	
 	# Get color levels from current values
 	colour_lvls <- get_val("colour_levels", character(0))
@@ -149,13 +152,26 @@ theme_pane_ui <- function(rv) {
 						selected = grid_color_val)
 			),
 			tabPanel("Colors",
-				div(style="display:flex; gap:8px; margin-bottom:8px;",
-					actionButton("ui_revert_colors", "Revert to Original", class = "btn btn-sm btn-warning"),
-					actionButton("ui_apply_palette_levels", "Generate colors for levels", class = "btn btn-sm btn-default")
+				div(style="margin-bottom:8px;",
+					actionButton("ui_revert_colors", "Revert to Original", class = "btn btn-sm btn-warning")
 				),
-				selectInput("ui_palette", "Palette", 
-						choices = c("None","viridis","magma","plasma","inferno","cividis"),
-						selected = palette_val),
+				tags$hr(),
+				
+				# Continuous color palettes
+				h5("Continuous Color Scales"),
+				selectInput("ui_continuous_colour_palette", "Continuous Colour Palette",
+					choices = c("None", "viridis", "magma", "plasma", "inferno", "cividis"),
+					selected = continuous_colour_palette_val),
+				selectInput("ui_continuous_fill_palette", "Continuous Fill Palette",
+					choices = c("None", "viridis", "magma", "plasma", "inferno", "cividis"),
+					selected = continuous_fill_palette_val),
+				tags$hr(),
+				
+				# Discrete color palettes
+				h5("Discrete Color Palettes"),
+				selectInput("ui_palette", "Discrete Palette",
+					choices = c("None", "viridis", "magma", "plasma", "inferno", "cividis", "Set1", "Set2", "Set3", "Paired", "Dark2", "Accent"),
+					selected = palette_val),
 				tags$hr(),
 				if (!length(colour_lvls) && !length(fill_lvls)) tags$em("No discrete colour/fill levels detected yet."),
 				if (length(colour_lvls)) tagList(
@@ -273,23 +289,35 @@ register_theme_observers <- function(input, rv, session) {
 	
 	# Revert colors to original
 	observeEvent(input$ui_revert_colors, {
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		
-		# Revert colour levels to original
+		cat("\n=== REVERTING COLORS TO ORIGINAL ===\n")
+		cat("  Plot:", ap, "\n")
+		
+		# Revert discrete colors
 		if (!is.null(rv$originals[[ap]]$colour_levels_cols)) {
 			rv$edits[[ap]]$colour_levels_cols <- rv$originals[[ap]]$colour_levels_cols
+			cat("  Reverted colour_levels_cols\n")
 		}
-		
-		# Revert fill levels to original
 		if (!is.null(rv$originals[[ap]]$fill_levels_cols)) {
 			rv$edits[[ap]]$fill_levels_cols <- rv$originals[[ap]]$fill_levels_cols
+			cat("  Reverted fill_levels_cols\n")
 		}
 		
-		# Clear palette setting
-		rv$edits[[ap]]$palette <- "None"
+		# Revert continuous palettes
+		if (!is.null(rv$originals[[ap]]$continuous_colour_palette)) {
+			rv$edits[[ap]]$continuous_colour_palette <- rv$originals[[ap]]$continuous_colour_palette
+			cat("  Reverted continuous_colour_palette to:", rv$originals[[ap]]$continuous_colour_palette, "\n")
+		}
+		if (!is.null(rv$originals[[ap]]$continuous_fill_palette)) {
+			rv$edits[[ap]]$continuous_fill_palette <- rv$originals[[ap]]$continuous_fill_palette
+			cat("  Reverted continuous_fill_palette to:", rv$originals[[ap]]$continuous_fill_palette, "\n")
+		}
 		
-		showNotification("Colors reverted to original", type = "message")
+		# Reset discrete palette
+		rv$edits[[ap]]$palette <- "None"
+		cat("  Reset discrete palette to None\n")
 	}, ignoreInit = TRUE)
 	
 	# General revert to original for all theme settings
@@ -376,6 +404,31 @@ register_theme_observers <- function(input, rv, session) {
 			})
 		}
 	})
+	
+	# Continuous color palette observers
+	observeEvent(input$ui_continuous_colour_palette, {
+		if (rv$is_hydrating) return()
+		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+		
+		cat("\n=== CONTINUOUS COLOUR PALETTE INPUT CHANGED ===\n")
+		cat("  Plot:", ap, "\n")
+		cat("  New value:", input$ui_continuous_colour_palette, "\n")
+		
+		ensure_edits(rv, ap, grid = FALSE)
+		rv$edits[[ap]]$continuous_colour_palette <- input$ui_continuous_colour_palette
+	}, ignoreInit = TRUE, ignoreNULL = TRUE)
+	
+	observeEvent(input$ui_continuous_fill_palette, {
+		if (rv$is_hydrating) return()
+		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+		
+		cat("\n=== CONTINUOUS FILL PALETTE INPUT CHANGED ===\n")
+		cat("  Plot:", ap, "\n")
+		cat("  New value:", input$ui_continuous_fill_palette, "\n")
+		
+		ensure_edits(rv, ap, grid = FALSE)
+		rv$edits[[ap]]$continuous_fill_palette <- input$ui_continuous_fill_palette
+	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	# Persist selected sub-tab
 	observeEvent(input$theme_tabs, {

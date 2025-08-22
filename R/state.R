@@ -160,8 +160,8 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				
 				# Colors - use BASE defaults
 				palette = "None",
-				continuous_colour_palette = NULL,
-				continuous_fill_palette = NULL,
+				continuous_colour_palette = continuous_colour_palette,
+				continuous_fill_palette = continuous_fill_palette,
 				
 				# Text sizes - use BASE defaults for essential settings
 				title_size = BASE$title_size,
