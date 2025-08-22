@@ -33,6 +33,14 @@ theme_pane_ui <- function(rv) {
 	grid_minor_linetype_val <- get_val("grid_minor_linetype", "dashed")
 	palette_val <- get_val("palette", "None")
 	
+	# Debug: Print what values are being loaded
+	cat("\n=== LOADING UI FOR PLOT:", ap, "===\n")
+	cat("  theme:", theme_val, "\n")
+	cat("  base_size:", base_size_val, "\n")
+	cat("  palette:", palette_val, "\n")
+	cat("  colour_levels:", paste(get_val("colour_levels", character(0)), collapse = ", "), "\n")
+	cat("  continuous_colour_palette:", get_val("continuous_colour_palette", "NULL"), "\n")
+	
 	# Get color levels from current values
 	colour_lvls <- get_val("colour_levels", character(0))
 	fill_lvls <- get_val("fill_levels", character(0))
@@ -253,6 +261,12 @@ register_theme_observers <- function(input, rv, session) {
 	observeEvent(input$ui_palette, {
 		if (rv$is_hydrating) return()
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+		
+		cat("\n=== PALETTE INPUT CHANGED ===\n")
+		cat("  Plot:", ap, "\n")
+		cat("  New value:", input$ui_palette, "\n")
+		cat("  Current stored value:", get_current_value(rv, ap, "palette", "None"), "\n")
+		
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$palette <- input$ui_palette
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)

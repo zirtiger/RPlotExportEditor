@@ -39,6 +39,9 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 		p <- rv$plots[[name]]
 		if (length(rv[[orig_bucket]][[name]]) == 0) { # Only extract originals once
 			
+			# Debug: Print what we're extracting
+			cat("\n=== EXTRACTING ORIGINALS FOR PLOT:", name, "===\n")
+			
 			# Extract labels
 			get_lab <- function(lbl) {
 				v <- tryCatch(p$labels[[lbl]], error = function(...) NULL)
@@ -173,6 +176,9 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 			# Extract original color levels and colors
 			extract_levels_from_plot <- function(p, aes_name) {
 				if (!requireNamespace("rlang", quietly = TRUE)) return(list(levels = character(0), colors = character(0)))
+				
+				cat("  Extracting", aes_name, "levels...\n")
+				
 				collect <- character(0)
 				alt_aes <- if (identical(aes_name, "colour")) "color" else aes_name
 				get_expr <- function(mapping) {
@@ -202,6 +208,8 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 					}
 				}
 				levels <- unique(collect[nzchar(collect)])
+				
+				cat("    Found levels:", paste(levels, collapse = ", "), "\n")
 				
 				# Extract actual colors from the plot
 				colors <- character(0)
@@ -288,6 +296,32 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				rv[[orig_bucket]][[name]]$fill_levels <- fill_result$levels
 				rv[[orig_bucket]][[name]]$fill_levels_cols <- fill_result$colors
 			}
+			
+			# Check for continuous color scales
+			continuous_colour_palette <- NULL
+			continuous_fill_palette <- NULL
+			
+			cat("  Checking for continuous color scales...\n")
+			
+			for (scale in p$scales$scales) {
+				if (inherits(scale, "ScaleContinuous")) {
+					if (identical(scale$aesthetics, "colour") || identical(scale$aesthetics, "color")) {
+						continuous_colour_palette <- "viridis"  # Default for continuous
+						cat("    Found continuous COLOUR scale\n")
+					} else if (identical(scale$aesthetics, "fill")) {
+						continuous_fill_palette <- "viridis"  # Default for continuous
+						cat("    Found continuous FILL scale\n")
+					}
+				}
+			}
+			
+			cat("  Final color settings:\n")
+			cat("    colour_levels:", paste(col_result$levels, collapse = ", "), "\n")
+			cat("    colour_levels_cols:", paste(col_result$colors, collapse = ", "), "\n")
+			cat("    fill_levels:", paste(fill_result$levels, collapse = ", "), "\n")
+			cat("    fill_levels_cols:", paste(fill_result$colors, collapse = ", "), "\n")
+			cat("    continuous_colour_palette:", continuous_colour_palette, "\n")
+			cat("    continuous_fill_palette:", continuous_fill_palette, "\n")
 		}
 		
 		# Don't automatically initialize edits - let the UI load from originals

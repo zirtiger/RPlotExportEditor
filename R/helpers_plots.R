@@ -19,8 +19,15 @@ apply_edits <- function(p, edits) {
   apply_level_colors <- function(p) {
     try_apply <- function(expr, p) { tryCatch({ expr }, error = function(...) p) }
     
+    cat("\n=== APPLYING COLORS TO PLOT ===\n")
+    cat("  continuous_colour_palette:", e$continuous_colour_palette, "\n")
+    cat("  continuous_fill_palette:", e$continuous_fill_palette, "\n")
+    cat("  colour_levels:", paste(e$colour_levels, collapse = ", "), "\n")
+    cat("  colour_levels_cols:", paste(e$colour_levels_cols, collapse = ", "), "\n")
+    
     # Apply continuous palettes first (if present)
     if (!is.null(e$continuous_colour_palette) && e$continuous_colour_palette != "None") {
+      cat("  Applying continuous COLOUR palette:", e$continuous_colour_palette, "\n")
       palette_func <- switch(e$continuous_colour_palette,
         "viridis" = viridisLite::viridis,
         "magma" = viridisLite::magma,
