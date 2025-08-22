@@ -43,15 +43,45 @@ ensure_edits <- function(rv, name, grid = FALSE) {
       v <- tryCatch(p$labels[[lbl]], error = function(...) NULL)
       if (is.null(v)) NULL else as.character(v)
     }
+    
+    # Try to seed from plot theme if available
+    get_theme_size <- function(path) {
+      # path is a character vector of nested names, e.g., c("plot.title","size")
+      v <- NULL
+      cur <- tryCatch(p$theme, error = function(...) NULL)
+      if (is.null(cur)) return(NULL)
+      # Walk nested list by names split on '.'
+      parts <- unlist(strsplit(path, "\\."))
+      for (nm in parts) {
+        if (is.null(cur)) break
+        cur <- tryCatch(cur[[nm]], error = function(...) NULL)
+      }
+      v <- tryCatch(as_num_safe(cur), error = function(...) NULL)
+      ifelse(is.null(v) || is.na(v), NULL, v)
+    }
+    get_legend_pos <- function() {
+      pos <- tryCatch(p$theme$legend.position, error = function(...) NULL)
+      if (is.null(pos)) return(NULL)
+      if (is.character(pos) && pos %in% LEGEND_POS) return(pos)
+      NULL
+    }
+    
     rv[[bucket]][[name]] <- list(
-      title      = get_lab("title"),
-      subtitle   = get_lab("subtitle"),
-      caption    = get_lab("caption"),
-      xlab       = get_lab("x"),
-      ylab       = get_lab("y"),
-      theme      = BASE$theme,
-      base_size  = BASE$base_size,
-      legend_pos = BASE$legend_pos
+      title       = get_lab("title"),
+      subtitle    = get_lab("subtitle"),
+      caption     = get_lab("caption"),
+      xlab        = get_lab("x"),
+      ylab        = get_lab("y"),
+      theme       = BASE$theme,
+      base_size   = get_theme_size("text.size") %||% BASE$base_size,
+      legend_pos  = get_legend_pos() %||% BASE$legend_pos,
+      title_size        = get_theme_size("plot.title.size"),
+      subtitle_size     = get_theme_size("plot.subtitle.size"),
+      caption_size      = get_theme_size("plot.caption.size"),
+      axis_title_size   = get_theme_size("axis.title.size"),
+      axis_text_size    = get_theme_size("axis.text.size"),
+      legend_title_size = get_theme_size("legend.title.size"),
+      legend_text_size  = get_theme_size("legend.text.size")
     )
   }
   

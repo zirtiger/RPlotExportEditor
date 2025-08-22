@@ -17,43 +17,39 @@
   color: white;
 }
 
-/* Make the settings box more compact */
-.box {
-  margin-bottom: 10px;
-}
+/* Compact boxes and remove extra padding */
+.box { margin-bottom: 6px; }
+.box-header { display: none; }
+.box-body { padding: 8px; }
 
-.box-header {
-  padding: 8px 15px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #ddd;
-}
+/* Compact form controls */
+.form-control { margin-bottom: 6px; height: 30px; padding: 4px 8px; font-size: 13px; }
+.form-group { margin-bottom: 8px; }
 
-.box-body {
-  padding: 15px;
-}
+/* Compact sliders */
+.irs { margin-bottom: 6px; }
 
-/* Style form controls */
-.form-control {
-  margin-bottom: 8px;
-}
+/* Buttons */
+.btn { margin-bottom: 6px; padding: 4px 8px; font-size: 13px; }
+.btn.btn-link { padding-left: 0; }
 
-.form-group {
-  margin-bottom: 12px;
-}
+/* Tabs compact */
+.nav-tabs > li > a { padding: 6px 10px; font-size: 12px; }
 
-/* Make sliders more compact */
-.irs {
-  margin-bottom: 8px;
-}
+/* Remove padding around plot area */
+.plot-container { padding: 0; border: none; }
 
-/* Style buttons */
-.btn {
-  margin-bottom: 8px;
+/* Disabled/Inactive main menu items */
+.sidebar-menu li.disabled > a,
+.sidebar-menu li.disabled > a:hover {
+  color: #999 !important;
+  cursor: not-allowed;
+  background-color: transparent !important;
 }
+.sidebar-menu li.disabled i { color: #bbb; }
 
-.btn-block {
-  width: 100%;
-}
+/* Smaller labels */
+.control-label { font-size: 12px; margin-bottom: 2px; }
 
 /* Make the plot area more prominent */
 .plot-container {
@@ -144,7 +140,4 @@ h5 {
 }
 
 /* Style horizontal rules */
-hr {
-  margin: 15px 0;
-  border-color: #dee2e6;
-}
+hr { margin: 10px 0; border-color: #dee2e6; }

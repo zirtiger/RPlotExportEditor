@@ -9,12 +9,12 @@ export_pane_ui <- function(rv) {
       h4("Export — Grid canvas"),
       tags$hr(),
       h5("Dimensions"),
-      sliderInput("ui_gridexp_w", "Width (mm)", 
-                 value = ex$width_mm %||% BASE$width_mm, 
-                 min = 50, max = 1000, step = 10),
-      sliderInput("ui_gridexp_h", "Height (mm)", 
-                 value = ex$height_mm %||% BASE$height_mm, 
-                 min = 50, max = 1000, step = 10),
+      fluidRow(
+        column(6, numericInput("ui_gridexp_w", "Width (mm)", 
+                       value = ex$width_mm %||% BASE$width_mm, min = 20, max = 2000, step = 5)),
+        column(6, numericInput("ui_gridexp_h", "Height (mm)", 
+                       value = ex$height_mm %||% BASE$height_mm, min = 20, max = 2000, step = 5))
+      ),
       tags$hr(),
       h5("Quality"),
       selectInput("ui_gridexp_d", "DPI", 
@@ -23,9 +23,9 @@ export_pane_ui <- function(rv) {
                                  as.character(ex$dpi %||% BASE$dpi), "custom")),
       conditionalPanel(
         condition = "input.ui_gridexp_d == 'custom'",
-        sliderInput("ui_gridexp_d_custom", "Custom DPI", 
+        numericInput("ui_gridexp_d_custom", "Custom DPI", 
                    value = ex$dpi %||% BASE$dpi, 
-                   min = 72, max = 1200, step = 10)
+                   min = 72, max = 2400, step = 10)
       ),
       selectInput("ui_gridexp_f", "Format", 
                  choices = c("PNG","TIFF","PDF","SVG","EPS"), 
@@ -49,12 +49,12 @@ export_pane_ui <- function(rv) {
     h4(sprintf("Export — %s", ap)),
     tags$hr(),
     h5("Dimensions"),
-    sliderInput("ui_exp_width", "Width (mm)", 
-               value = ex$width_mm %||% BASE$width_mm, 
-               min = 20, max = 1000, step = 5),
-    sliderInput("ui_exp_height", "Height (mm)", 
-               value = ex$height_mm %||% BASE$height_mm, 
-               min = 20, max = 1000, step = 5),
+    fluidRow(
+      column(6, numericInput("ui_exp_width", "Width (mm)", 
+                     value = ex$width_mm %||% BASE$width_mm, min = 20, max = 2000, step = 5)),
+      column(6, numericInput("ui_exp_height", "Height (mm)", 
+                     value = ex$height_mm %||% BASE$height_mm, min = 20, max = 2000, step = 5))
+    ),
     tags$hr(),
     h5("Quality"),
     selectInput("ui_exp_dpi", "DPI", 
@@ -63,9 +63,9 @@ export_pane_ui <- function(rv) {
                                as.character(ex$dpi %||% BASE$dpi), "custom")),
     conditionalPanel(
       condition = "input.ui_exp_dpi == 'custom'",
-      sliderInput("ui_exp_dpi_custom", "Custom DPI", 
+      numericInput("ui_exp_dpi_custom", "Custom DPI", 
                  value = ex$dpi %||% BASE$dpi, 
-                 min = 72, max = 1200, step = 10)
+                 min = 72, max = 2400, step = 10)
     ),
     selectInput("ui_exp_format", "Format", 
                choices = c("PNG","TIFF","PDF","SVG","EPS"),

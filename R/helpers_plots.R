@@ -42,33 +42,49 @@ apply_edits <- function(p, edits) {
   
   p <- p + text_theme
   
-  # Axis limits
-  if (!is.null(e$x_min) || !is.null(e$x_max)) {
-    x_limits <- c(e$x_min, e$x_max)
-    if (all(!is.na(x_limits))) {
-      p <- p + ggplot2::xlim(x_limits)
-    }
+  # Sanitize numeric edits
+  x_min_val <- as_num_safe(e$x_min)
+  x_max_val <- as_num_safe(e$x_max)
+  y_min_val <- as_num_safe(e$y_min)
+  y_max_val <- as_num_safe(e$y_max)
+  x_major_val <- as_num_safe(e$x_major)
+  x_minor_val <- as_num_safe(e$x_minor)
+  y_major_val <- as_num_safe(e$y_major)
+  y_minor_val <- as_num_safe(e$y_minor)
+  
+  # Axis limits (apply only if both bounds are provided and finite)
+  if (!is.null(x_min_val) && !is.null(x_max_val) && all(is.finite(c(x_min_val, x_max_val)))) {
+    p <- p + ggplot2::xlim(c(x_min_val, x_max_val))
   }
-  if (!is.null(e$y_min) || !is.null(e$y_max)) {
-    y_limits <- c(e$y_min, e$y_max)
-    if (all(!is.na(y_limits))) {
-      p <- p + ggplot2::ylim(y_limits)
-    }
+  if (!is.null(y_min_val) && !is.null(y_max_val) && all(is.finite(c(y_min_val, y_max_val)))) {
+    p <- p + ggplot2::ylim(c(y_min_val, y_max_val))
   }
   
   # Axis breaks
-  if (!is.null(e$x_major) || !is.null(e$x_minor)) {
-    x_breaks <- if (!is.null(e$x_major)) seq(e$x_min %||% 0, e$x_max %||% 10, length.out = e$x_major + 1)
-    x_minor_breaks <- if (!is.null(e$x_minor) && e$x_minor > 0) {
-      seq(e$x_min %||% 0, e$x_max %||% 10, length.out = e$x_minor + 1)
-    } else NULL
+  if (!is.null(x_major_val) || !is.null(x_minor_val)) {
+    from_x <- if (!is.null(x_min_val)) x_min_val else 0
+    to_x   <- if (!is.null(x_max_val)) x_max_val else 10
+    x_breaks <- NULL
+    x_minor_breaks <- NULL
+    if (!is.null(x_major_val) && is.finite(from_x) && is.finite(to_x) && x_major_val >= 1) {
+      x_breaks <- seq(from_x, to_x, length.out = x_major_val + 1)
+    }
+    if (!is.null(x_minor_val) && is.finite(from_x) && is.finite(to_x) && x_minor_val > 0) {
+      x_minor_breaks <- seq(from_x, to_x, length.out = x_minor_val + 1)
+    }
     p <- p + ggplot2::scale_x_continuous(breaks = x_breaks, minor_breaks = x_minor_breaks)
   }
-  if (!is.null(e$y_major) || !is.null(e$y_minor)) {
-    y_breaks <- if (!is.null(e$y_major)) seq(e$y_min %||% 0, e$y_max %||% 10, length.out = e$y_major + 1)
-    y_minor_breaks <- if (!is.null(e$y_minor) && e$y_minor > 0) {
-      seq(e$y_min %||% 0, e$y_max %||% 10, length.out = e$y_minor + 1)
-    } else NULL
+  if (!is.null(y_major_val) || !is.null(y_minor_val)) {
+    from_y <- if (!is.null(y_min_val)) y_min_val else 0
+    to_y   <- if (!is.null(y_max_val)) y_max_val else 10
+    y_breaks <- NULL
+    y_minor_breaks <- NULL
+    if (!is.null(y_major_val) && is.finite(from_y) && is.finite(to_y) && y_major_val >= 1) {
+      y_breaks <- seq(from_y, to_y, length.out = y_major_val + 1)
+    }
+    if (!is.null(y_minor_val) && is.finite(from_y) && is.finite(to_y) && y_minor_val > 0) {
+      y_minor_breaks <- seq(from_y, to_y, length.out = y_minor_val + 1)
+    }
     p <- p + ggplot2::scale_y_continuous(breaks = y_breaks, minor_breaks = y_minor_breaks)
   }
   
