@@ -96,22 +96,21 @@ theme_pane_ui <- function(rv) {
 				selectInput("ui_palette", "Palette", 
 						choices = c("None","viridis","magma","plasma","inferno","cividis"),
 						selected = e$palette %||% "None"),
-				textInput("ui_manual_colors", "Manual colors (comma-separated)", value = e$manual_colors %||% ""),
-				div(style="margin-top:8px;", actionButton("ui_apply_palette_levels", "Apply palette to levels", class = "btn btn-sm btn-default")),
+				div(style="margin-top:8px;", actionButton("ui_apply_palette_levels", "Generate colors for levels", class = "btn btn-sm btn-default")),
 				tags$hr(),
 				if (!length(colour_lvls) && !length(fill_lvls)) tags$em("No discrete colour/fill levels detected yet."),
 				if (length(colour_lvls)) tagList(
 					tags$strong("Colour levels"),
 					lapply(seq_along(colour_lvls), function(i) {
 						lvl <- as.character(colour_lvls[i]); cur <- (e$colour_levels_cols %||% rep(NA_character_, length(colour_lvls)))[i]
-						make_color_input(paste0("ui_col_level_", i), lvl, cur)
+						make_color_input(paste0("ui_col_level_", i), paste0("[", lvl, "]"), cur)
 					})
 				),
 				if (length(fill_lvls)) tagList(
 					tags$strong("Fill levels"),
 					lapply(seq_along(fill_lvls), function(i) {
 						lvl <- as.character(fill_lvls[i]); cur <- (e$fill_levels_cols %||% rep(NA_character_, length(fill_lvls)))[i]
-						make_color_input(paste0("ui_fill_level_", i), lvl, cur)
+						make_color_input(paste0("ui_fill_level_", i), paste0("[", lvl, "]"), cur)
 					})
 				)
 			)
@@ -203,13 +202,6 @@ register_theme_observers <- function(input, rv, session) {
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		rv$edits[[ap]]$palette <- input$ui_palette
-	}, ignoreInit = TRUE, ignoreNULL = TRUE)
-	
-	observeEvent(input$ui_manual_colors, {
-		if (rv$is_hydrating) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$manual_colors <- input$ui_manual_colors
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_apply_palette_levels, {
