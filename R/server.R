@@ -17,14 +17,45 @@ app_server <- function(input, output, session) {
   menu_activation <- reactive({
     active_tab <- rv$active_tab
     has_plots <- length(rv$plots) > 0
-    
     list(
-      grid = TRUE,  # Grid is always available
-      export = has_plots,  # Export needs plots
-      text = has_plots && active_tab != "Grid",  # Text needs plots and not grid
-      theme = has_plots && active_tab != "Grid"  # Theme needs plots and not grid
+      grid = TRUE,
+      export = has_plots,
+      text = has_plots && active_tab != "Grid",
+      theme = has_plots && active_tab != "Grid"
     )
   })
+  
+  # Dynamic sidebar menu with disabled look + no click on inactive
+  output$sidebar_menu <- shinydashboard::renderSidebarMenu({
+    ma <- menu_activation()
+    disable_class <- function(active) if (isTRUE(active)) "" else " disabled-item"
+    shiny::tagList(
+      shinydashboard::sidebarMenu(id = "mainmenu",
+        shinydashboard::menuItem("Grid",   tabName = "grid",   icon = icon("th"),   class = disable_class(ma$grid)),
+        shinydashboard::menuItem("Export", tabName = "export", icon = icon("download"), class = disable_class(ma$export)),
+        shinydashboard::menuItem("Text",   tabName = "text",   icon = icon("font"), class = disable_class(ma$text)),
+        shinydashboard::menuItem("Theme",  tabName = "theme",  icon = icon("paint-brush"), class = disable_class(ma$theme)),
+        hr(),
+        fileInput("plots_rds", "Load ggplot (.rds, multiple)", accept = ".rds", multiple = TRUE),
+        actionButton("load_demo", "Load 3 demo plots", class = "btn btn-link")
+      )
+    )
+  })
+  
+  # Prevent navigation to disabled items
+  observeEvent(input$mainmenu, {
+    ma <- menu_activation()
+    blocked <- c(
+      if (!isTRUE(ma$export)) "export" else NULL,
+      if (!isTRUE(ma$text))   "text"   else NULL,
+      if (!isTRUE(ma$theme))  "theme"  else NULL
+    )
+    if (!is.null(input$mainmenu) && input$mainmenu %in% blocked) {
+      # revert selection to Grid (or first allowed)
+      target <- if (isTRUE(ma$grid)) "grid" else names(Filter(isTRUE, ma))[1]
+      updateTabItems(session, "mainmenu", target)
+    }
+  }, ignoreInit = TRUE)
   
   # --- Demo loader & .rds loader --------------------------------------
   observeEvent(input$load_demo, {

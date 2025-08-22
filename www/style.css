@@ -47,3 +47,11 @@ input[type="number"] { padding: 4px 6px; font-size: 12px; }
 .box .shiny-image-output {
   margin: 0; /* rely on box-body padding */
 }
+
+/***** Disabled sidebar items *****/
+.sidebar-menu .disabled-item > a,
+.sidebar-menu .disabled-item > a:hover {
+  color: #aaa !important;
+  pointer-events: none;
+  cursor: default;
+}

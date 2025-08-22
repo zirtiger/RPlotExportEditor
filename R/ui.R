@@ -6,16 +6,7 @@ app_ui <- function(request = NULL) {
   
   sidebar <- shinydashboard::dashboardSidebar(
     width = 300,
-    shinydashboard::sidebarMenu(
-      id = "mainmenu",
-      shinydashboard::menuItem("Grid",   tabName = "grid",   icon = icon("th")),
-      shinydashboard::menuItem("Export", tabName = "export", icon = icon("download")),
-      shinydashboard::menuItem("Text",   tabName = "text",   icon = icon("font")),
-      shinydashboard::menuItem("Theme",  tabName = "theme",  icon = icon("paint-brush")),
-      hr(),
-      fileInput("plots_rds", "Load ggplot (.rds, multiple)", accept = ".rds", multiple = TRUE),
-      actionButton("load_demo", "Load 3 demo plots", class = "btn btn-link")
-    )
+    shinydashboard::sidebarMenuOutput("sidebar_menu")
   )
   
   body <- shinydashboard::dashboardBody(
