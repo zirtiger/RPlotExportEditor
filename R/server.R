@@ -72,10 +72,14 @@ app_server <- function(input, output, session) {
       updateTabItems(session, "mainmenu", "grid")
     } else if (length(rv$plots) > 0) {
       # For plot tabs, ensure we have fresh edits for this specific plot
-      ensure_edits(rv, rv$active_tab, grid = FALSE)
+      # Only ensure edits if we don't already have originals for this plot
+      # This prevents unnecessary re-extraction and potential inheritance issues
+      if (is.null(rv$originals[[rv$active_tab]]) || length(rv$originals[[rv$active_tab]]) == 0) {
+        ensure_edits(rv, rv$active_tab, grid = FALSE)
+      }
       
       # If this is the first time switching to a plot (no last_mainmenu set),
-      # default to "text" instead of staying on grid
+      # default to "text" instead of staying on "grid"
       target_menu <- if (is.null(rv$last_mainmenu) || rv$last_mainmenu == "grid") "text" else rv$last_mainmenu
       updateTabItems(session, "mainmenu", target_menu)
     }
@@ -163,7 +167,11 @@ app_server <- function(input, output, session) {
         name <- nm
         output[[paste0("plot_prev_", name)]] <- renderPlot({
           req(!is.null(rv$plots[[name]]))
-          ensure_edits(rv, name)
+          # Only ensure edits if we don't already have originals for this plot
+          # This prevents unnecessary re-extraction and potential inheritance issues
+          if (is.null(rv$originals[[name]]) || length(rv$originals[[name]]) == 0) {
+            ensure_edits(rv, name)
+          }
           apply_edits(rv$plots[[name]], rv$edits[[name]])
         })
       })

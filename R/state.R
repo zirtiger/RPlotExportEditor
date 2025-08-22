@@ -44,7 +44,8 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 		}
 		is_blank <- function(x) inherits(x, "element_blank")
 		
-		if (length(rv[[orig_bucket]][[name]]) == 0) { # Only extract originals once
+		# Only extract originals if we haven't done so before
+		if (length(rv[[orig_bucket]][[name]]) == 0) {
 			
 			# Debug: Print what we're extracting
 			cat("\n=== EXTRACTING ORIGINALS FOR PLOT:", name, "===\n")
@@ -234,17 +235,7 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 			cat("    continuous_colour_palette:", continuous_colour_palette, "\n")
 			cat("    continuous_fill_palette:", continuous_fill_palette, "\n")
 			
-			# Store color results in originals
-			if (length(colour_result$levels)) {
-				rv[[orig_bucket]][[name]]$colour_levels <- colour_result$levels
-				rv[[orig_bucket]][[name]]$colour_levels_cols <- colour_result$colors
-			}
-			if (length(fill_result$levels)) {
-				rv[[orig_bucket]][[name]]$fill_levels <- fill_result$levels
-				rv[[orig_bucket]][[name]]$fill_levels_cols <- fill_result$colors
-			}
-			
-			# Store ALL original values
+			# Store ALL original values (including colors)
 			rv[[orig_bucket]][[name]] <- list(
 				# Labels
 				title      = get_lab("title"),
@@ -280,10 +271,14 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				y_step_major = y_info$step_major %||% 1,
 				y_step_minor = y_info$step_minor %||% 0.5,
 				
-				# Colors - use BASE defaults
+				# Colors - include extracted results
 				palette = "None",
 				continuous_colour_palette = continuous_colour_palette,
 				continuous_fill_palette = continuous_fill_palette,
+				colour_levels = colour_result$levels,
+				colour_levels_cols = colour_result$colors,
+				fill_levels = fill_result$levels,
+				fill_levels_cols = fill_result$colors,
 				
 				# Text sizes - use BASE defaults for essential settings
 				title_size = BASE$title_size,
@@ -295,15 +290,14 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 				legend_text_size = BASE$legend_text_size
 			)
 		}
-		
-		# Don't automatically initialize edits - let the UI load from originals
-		# Edits will only be populated when user actually makes changes
-		
-		# Initialize edits with original values (if edits are empty)
-		if (length(rv[[bucket]][[name]]) == 0) {
-			rv[[bucket]][[name]] <- rv[[orig_bucket]][[name]]
-		}
 	}
+	
+	# Don't automatically initialize edits - let the UI load from originals
+	# Edits will only be populated when user actually makes changes
+	
+	# IMPORTANT: Do NOT automatically copy originals to edits
+	# This prevents inheritance issues when switching between plots
+	# Edits should start empty and only be populated by user actions
 	
 	if (!grid && is.null(rv$export[[name]])) {
 		rv$export[[name]] <- list(

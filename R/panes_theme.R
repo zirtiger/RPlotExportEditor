@@ -12,7 +12,11 @@ theme_pane_ui <- function(rv) {
 	ap <- rv$active_tab
 	if (is.null(ap) || is.null(rv$plots[[ap]])) return(tagList(h4("Theme"), helpText("Select a plot tab.")))
 	
-	ensure_edits(rv, ap, grid = FALSE)
+	# Only ensure edits if we don't already have originals for this plot
+	# This prevents unnecessary re-extraction and potential inheritance issues
+	if (is.null(rv$originals[[ap]]) || length(rv$originals[[ap]]) == 0) {
+		ensure_edits(rv, ap, grid = FALSE)
+	}
 	
 	# Use helper function to get current values
 	get_val <- function(setting, default = NULL) {
