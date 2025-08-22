@@ -15,6 +15,57 @@ apply_edits <- function(p, edits) {
   tfun <- get_theme_fun(e$theme %||% BASE$theme)
   p <- p + tfun(base_size = e$base_size %||% BASE$base_size)
   
+  # Colors: apply per-level mappings using limits-aligned values to avoid name mismatch
+  apply_level_colors <- function(p) {
+    try_apply <- function(expr, p) { tryCatch({ expr }, error = function(...) p) }
+    
+    cat("\n=== APPLYING COLORS TO PLOT ===\n")
+    cat("  continuous_colour_palette:", e$continuous_colour_palette, "\n")
+    cat("  continuous_fill_palette:", e$continuous_fill_palette, "\n")
+    cat("  colour_levels:", paste(e$colour_levels, collapse = ", "), "\n")
+    cat("  colour_levels_cols:", paste(e$colour_levels_cols, collapse = ", "), "\n")
+    
+    # Apply continuous palettes first (if present)
+    if (!is.null(e$continuous_colour_palette) && e$continuous_colour_palette != "None") {
+      cat("  Applying continuous COLOUR palette:", e$continuous_colour_palette, "\n")
+      p <- try_apply(p + ggplot2::scale_color_viridis_c(option = e$continuous_colour_palette), p)
+    }
+    
+    if (!is.null(e$continuous_fill_palette) && e$continuous_fill_palette != "None") {
+      cat("  Applying continuous FILL palette:", e$continuous_fill_palette, "\n")
+      p <- try_apply(p + ggplot2::scale_fill_viridis_c(option = e$continuous_fill_palette), p)
+    }
+    
+    # Apply discrete level colors ONLY if no continuous scales are active
+    # colour levels
+    if (!is.null(e$colour_levels) && !is.null(e$colour_levels_cols) && 
+      (is.null(e$continuous_colour_palette) || e$continuous_colour_palette == "None")) {
+      cat("  Applying discrete COLOUR levels\n")
+      lv <- as.character(e$colour_levels)
+      cols <- as.character(e$colour_levels_cols)
+      keep <- nzchar(lv) & nzchar(cols)
+      lv <- lv[keep]; cols <- cols[keep]
+      if (length(lv) && length(cols) && length(lv) == length(cols)) {
+        p <- try_apply(p + ggplot2::scale_color_manual(values = unname(cols), limits = lv, breaks = lv), p)
+      }
+    }
+    # fill levels
+    if (!is.null(e$fill_levels) && !is.null(e$fill_levels_cols) &&
+      (is.null(e$continuous_fill_palette) || e$continuous_fill_palette == "None")) {
+      cat("  Applying discrete FILL levels\n")
+      lv <- as.character(e$fill_levels)
+      cols <- as.character(e$fill_levels_cols)
+      keep <- nzchar(lv) & nzchar(cols)
+      lv <- lv[keep]; cols <- cols[keep]
+      if (length(lv) && length(cols) && length(lv) == length(cols)) {
+        p <- try_apply(p + ggplot2::scale_fill_manual(values = unname(cols), limits = lv, breaks = lv), p)
+      }
+    }
+    
+    p
+  }
+  p <- apply_level_colors(p)
+  
   # Custom text sizes
   text_theme <- ggplot2::theme()
   
@@ -56,19 +107,44 @@ apply_edits <- function(p, edits) {
     }
   }
   
-  # Axis breaks
-  if (!is.null(e$x_major) || !is.null(e$x_minor)) {
-    x_breaks <- if (!is.null(e$x_major)) seq(e$x_min %||% 0, e$x_max %||% 10, length.out = e$x_major + 1)
-    x_minor_breaks <- if (!is.null(e$x_minor) && e$x_minor > 0) {
-      seq(e$x_min %||% 0, e$x_max %||% 10, length.out = e$x_minor + 1)
-    } else NULL
+  # Axis breaks — prefer step-based and use scales::breaks_width for clean ticks
+  if (!is.null(e$x_step_major) && is.finite(e$x_step_major) && e$x_step_major > 0) {
+    x_major_br <- scales::breaks_width(e$x_step_major)
+  } else {
+    x_major_br <- ggplot2::waiver()
+  }
+  if (!is.null(e$x_step_minor) && is.finite(e$x_step_minor) && e$x_step_minor > 0) {
+    x_minor_br <- scales::breaks_width(e$x_step_minor)
+  } else {
+    x_minor_br <- ggplot2::waiver()
+  }
+  if (!identical(x_major_br, ggplot2::waiver()) || !identical(x_minor_br, ggplot2::waiver())) {
+    p <- p + ggplot2::scale_x_continuous(breaks = x_major_br, minor_breaks = x_minor_br)
+  } else if (!is.null(e$x_major) || !is.null(e$x_minor)) {
+    x_min_val <- if (!is.null(e$x_min) && is.finite(e$x_min)) e$x_min else 0
+    x_max_val <- if (!is.null(e$x_max) && is.finite(e$x_max)) e$x_max else 10
+    x_breaks <- if (!is.null(e$x_major) && is.finite(e$x_major) && e$x_major > 0) seq(x_min_val, x_max_val, length.out = max(1, e$x_major + 1)) else ggplot2::waiver()
+    x_minor_breaks <- if (!is.null(e$x_minor) && is.finite(e$x_minor) && e$x_minor > 0) seq(x_min_val, x_max_val, length.out = max(1, e$x_minor + 1)) else ggplot2::waiver()
     p <- p + ggplot2::scale_x_continuous(breaks = x_breaks, minor_breaks = x_minor_breaks)
   }
-  if (!is.null(e$y_major) || !is.null(e$y_minor)) {
-    y_breaks <- if (!is.null(e$y_major)) seq(e$y_min %||% 0, e$y_max %||% 10, length.out = e$y_major + 1)
-    y_minor_breaks <- if (!is.null(e$y_minor) && e$y_minor > 0) {
-      seq(e$y_min %||% 0, e$y_max %||% 10, length.out = e$y_minor + 1)
-    } else NULL
+  
+  if (!is.null(e$y_step_major) && is.finite(e$y_step_major) && e$y_step_major > 0) {
+    y_major_br <- scales::breaks_width(e$y_step_major)
+  } else {
+    y_major_br <- ggplot2::waiver()
+  }
+  if (!is.null(e$y_step_minor) && is.finite(e$y_step_minor) && e$y_step_minor > 0) {
+    y_minor_br <- scales::breaks_width(e$y_step_minor)
+  } else {
+    y_minor_br <- ggplot2::waiver()
+  }
+  if (!identical(y_major_br, ggplot2::waiver()) || !identical(y_minor_br, ggplot2::waiver())) {
+    p <- p + ggplot2::scale_y_continuous(breaks = y_major_br, minor_breaks = y_minor_br)
+  } else if (!is.null(e$y_major) || !is.null(e$y_minor)) {
+    y_min_val <- if (!is.null(e$y_min) && is.finite(e$y_min)) e$y_min else 0
+    y_max_val <- if (!is.null(e$y_max) && is.finite(e$y_max)) e$y_max else 10
+    y_breaks <- if (!is.null(e$y_major) && is.finite(e$y_major) && e$y_major > 0) seq(y_min_val, y_max_val, length.out = max(1, e$y_major + 1)) else ggplot2::waiver()
+    y_minor_breaks <- if (!is.null(e$y_minor) && is.finite(e$y_minor) && e$y_minor > 0) seq(y_min_val, y_max_val, length.out = max(1, e$y_minor + 1)) else ggplot2::waiver()
     p <- p + ggplot2::scale_y_continuous(breaks = y_breaks, minor_breaks = y_minor_breaks)
   }
   
@@ -80,7 +156,7 @@ apply_edits <- function(p, edits) {
   # Legend box
   if (!is.null(e$legend_box)) {
     legend_theme <- legend_theme + ggplot2::theme(
-      legend.box.background = if (e$legend_box) ggplot2::element_rect(fill = "white", color = "black") else ggplot2::element_blank()
+      legend.box.background = if (isTRUE(e$legend_box)) ggplot2::element_rect(fill = "white", color = "black") else ggplot2::element_blank()
     )
   }
   
@@ -124,13 +200,13 @@ apply_edits <- function(p, edits) {
     
     if (!is.null(e$grid_major)) {
       legend_theme <- legend_theme + ggplot2::theme(
-        panel.grid.major = if (e$grid_major) ggplot2::element_line(color = grid_color) else ggplot2::element_blank()
+        panel.grid.major = if (isTRUE(e$grid_major)) ggplot2::element_line(color = grid_color, linetype = (e$grid_major_linetype %||% "solid")) else ggplot2::element_blank()
       )
     }
     
     if (!is.null(e$grid_minor)) {
       legend_theme <- legend_theme + ggplot2::theme(
-        panel.grid.minor = if (e$grid_minor) ggplot2::element_line(color = grid_color, linetype = "dashed") else ggplot2::element_blank()
+        panel.grid.minor = if (isTRUE(e$grid_minor)) ggplot2::element_line(color = grid_color, linetype = (e$grid_minor_linetype %||% "dashed")) else ggplot2::element_blank()
       )
     }
   }

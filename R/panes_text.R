@@ -23,52 +23,79 @@ text_pane_ui <- function(rv) {
     if (is.null(val)) "" else as.character(val)
   }
   
+  title_now    <- e$title    %||% get_lab("title")
+  subtitle_now <- e$subtitle %||% get_lab("subtitle")
+  caption_now  <- e$caption  %||% get_lab("caption")
+  xlab_now     <- e$xlab     %||% get_lab("x")
+  ylab_now     <- e$ylab     %||% get_lab("y")
+  
+  grid_major_on <- isTRUE(e$grid_major)
+  grid_minor_on <- isTRUE(e$grid_minor)
+  
   tagList(
     actionButton("apply_all_text", "Use for all plots", class = "btn btn-sm btn-default btn-block"),
     tags$hr(),
     h4(sprintf("Text — %s", ap)),
     tags$hr(),
-    h5("Labels"),
-    textInput("ui_title",    "Title",    e$title    %||% get_lab("title")),
-    textInput("ui_subtitle", "Subtitle", e$subtitle %||% get_lab("subtitle")),
-    textInput("ui_caption",  "Caption",  e$caption  %||% get_lab("caption")),
-    textInput("ui_xlab",     "X label",  e$xlab     %||% get_lab("x")),
-    textInput("ui_ylab",     "Y label",  e$ylab     %||% get_lab("y")),
-    tags$hr(),
-    h5("Text Sizes"),
-    sliderInput("ui_title_size", "Title size", 
-               value = e$title_size %||% BASE$title_size, 
-               min = 8, max = 24, step = 1),
-    sliderInput("ui_subtitle_size", "Subtitle size", 
-               value = e$subtitle_size %||% BASE$subtitle_size, 
-               min = 6, max = 20, step = 1),
-    sliderInput("ui_caption_size", "Caption size", 
-               value = e$caption_size %||% BASE$caption_size, 
-               min = 6, max = 18, step = 1),
-    sliderInput("ui_axis_title_size", "Axis title size", 
-               value = e$axis_title_size %||% BASE$axis_title_size, 
-               min = 8, max = 20, step = 1),
-    sliderInput("ui_axis_text_size", "Axis text size", 
-               value = e$axis_text_size %||% BASE$axis_text_size, 
-               min = 6, max = 18, step = 1),
-    sliderInput("ui_legend_title_size", "Legend title size", 
-               value = e$legend_title_size %||% BASE$legend_title_size, 
-               min = 8, max = 20, step = 1),
-    sliderInput("ui_legend_text_size", "Legend text size", 
-               value = e$legend_text_size %||% BASE$legend_text_size, 
-               min = 6, max = 18, step = 1),
-    tags$hr(),
-    h5("Axis Limits & Steps"),
-    numericInput("ui_x_min", "X axis min", value = e$x_min, step = 0.1),
-    numericInput("ui_x_max", "X axis max", value = e$x_max, step = 0.1),
-    numericInput("ui_y_min", "Y axis min", value = e$y_min, step = 0.1),
-    numericInput("ui_y_max", "Y axis max", value = e$y_max, step = 0.1),
-    tags$hr(),
-    h5("Axis Breaks"),
-    numericInput("ui_x_major", "X major breaks", value = e$x_major, min = 1, step = 1),
-    numericInput("ui_x_minor", "X minor breaks", value = e$x_minor, min = 0, step = 1),
-    numericInput("ui_y_major", "Y major breaks", value = e$y_major, min = 1, step = 1),
-    numericInput("ui_y_minor", "Y minor breaks", value = e$y_minor, min = 0, step = 1)
+    
+    # Use tabs for better organization
+    tabsetPanel(
+      id = "text_tabs",
+      selected = rv$tabs$text %||% "Labels",
+      tabPanel("Labels", 
+        textInput("ui_title",    "Title",    title_now),
+        textInput("ui_subtitle", "Subtitle", subtitle_now),
+        textInput("ui_caption",  "Caption",  caption_now),
+        textInput("ui_xlab",     "X label",  xlab_now),
+        textInput("ui_ylab",     "Y label",  ylab_now)
+      ),
+      tabPanel("Text Sizes",
+        sliderInput("ui_title_size", "Title size", 
+                   value = e$title_size %||% BASE$title_size, 
+                   min = 8, max = 34, step = 1),
+        sliderInput("ui_subtitle_size", "Subtitle size", 
+                   value = e$subtitle_size %||% BASE$subtitle_size, 
+                   min = 6, max = 30, step = 1),
+        sliderInput("ui_caption_size", "Caption size", 
+                   value = e$caption_size %||% BASE$caption_size, 
+                   min = 6, max = 28, step = 1),
+        div(class = if (nzchar(xlab_now) || nzchar(ylab_now)) NULL else "muted-control",
+            sliderInput("ui_axis_title_size", "Axis title size", 
+                       value = e$axis_title_size %||% BASE$axis_title_size, 
+                       min = 8, max = 30, step = 1)),
+        sliderInput("ui_axis_text_size", "Axis text size", 
+                   value = e$axis_text_size %||% BASE$axis_text_size, 
+                   min = 6, max = 28, step = 1),
+        sliderInput("ui_legend_title_size", "Legend title size", 
+                   value = e$legend_title_size %||% BASE$legend_title_size, 
+                   min = 8, max = 30, step = 1),
+        sliderInput("ui_legend_text_size", "Legend text size", 
+                   value = e$legend_text_size %||% BASE$legend_text_size, 
+                   min = 6, max = 28, step = 1)
+      ),
+      tabPanel("Axis",
+        fluidRow(
+          column(6, numericInput("ui_x_min", "X min", value = e$x_min, step = 0.1)),
+          column(6, numericInput("ui_x_max", "X max", value = e$x_max, step = 0.1))
+        ),
+        fluidRow(
+          column(6, numericInput("ui_y_min", "Y min", value = e$y_min, step = 0.1)),
+          column(6, numericInput("ui_y_max", "Y max", value = e$y_max, step = 0.1))
+        ),
+        tags$hr(),
+        h5("Steps"),
+        fluidRow(
+          column(6, numericInput("ui_x_step_major", "X major", value = e$x_step_major, min = 0, step = 0.1)),
+          column(6, numericInput("ui_y_step_major", "Y major", value = e$y_step_major, min = 0, step = 0.1))
+        ),
+        fluidRow(
+          column(6, numericInput("ui_x_step_minor", "X minor", value = e$x_step_minor, min = 0, step = 0.1)),
+          column(6, numericInput("ui_y_step_minor", "Y minor", value = e$y_step_minor, min = 0, step = 0.1))
+        ),
+        if (!grid_major_on) tags$small(style="color:#777;", "Major grid lines are off."),
+        if (!grid_minor_on) tags$small(style="color:#777; display:block;", "Minor grid lines are off.")
+      )
+    )
   )
 }
 
@@ -88,6 +115,11 @@ register_text_observers <- function(input, rv, session) {
       }
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
+  
+  # Persist selected sub-tab
+  observeEvent(input$text_tabs, {
+    rv$tabs$text <- input$text_tabs
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Basic text labels
   bind_edit("ui_title",    "title")
@@ -111,11 +143,11 @@ register_text_observers <- function(input, rv, session) {
   bind_edit("ui_y_min", "y_min")
   bind_edit("ui_y_max", "y_max")
   
-  # Axis breaks
-  bind_edit("ui_x_major", "x_major")
-  bind_edit("ui_x_minor", "x_minor")
-  bind_edit("ui_y_major", "y_major")
-  bind_edit("ui_y_minor", "y_minor")
+  # Axis steps
+  bind_edit("ui_x_step_minor", "x_step_minor")
+  bind_edit("ui_x_step_major", "x_step_major")
+  bind_edit("ui_y_step_minor", "y_step_minor")
+  bind_edit("ui_y_step_major", "y_step_major")
   
   observeEvent(input$apply_all_text, {
     ap <- rv$active_tab

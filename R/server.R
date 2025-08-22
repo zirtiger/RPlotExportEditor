@@ -11,6 +11,81 @@ app_server <- function(input, output, session) {
   rv <- init_reactive_state()
   rv$active_tab  <- "Grid"
   rv$is_hydrating <- FALSE
+  rv$last_mainmenu <- "text"  # prefer Text by default on plot tabs
+  
+  # --- Menu item activation logic --------------------------------------
+  menu_activation <- reactive({
+    active_tab <- rv$active_tab
+    has_plots <- length(rv$plots) > 0
+    list(
+      grid  = identical(active_tab, "Grid"),
+      export= has_plots,
+      text  = has_plots && !identical(active_tab, "Grid"),
+      theme = has_plots && !identical(active_tab, "Grid")
+    )
+  })
+  
+  # Dynamic sidebar menu with disabled look + no click on inactive
+  output$sidebar_menu <- shinydashboard::renderMenu({
+    ma <- menu_activation()
+    add_disabled <- function(item, active) {
+      if (isTRUE(active)) return(item)
+      htmltools::tagAppendAttributes(item, class = "disabled-item")
+    }
+    shinydashboard::sidebarMenu(id = "mainmenu",
+      add_disabled(shinydashboard::menuItem("Grid",   tabName = "grid",   icon = icon("th")), ma$grid),
+      add_disabled(shinydashboard::menuItem("Export", tabName = "export", icon = icon("download")), ma$export),
+      add_disabled(shinydashboard::menuItem("Text",   tabName = "text",   icon = icon("font")), ma$text),
+      add_disabled(shinydashboard::menuItem("Theme",  tabName = "theme",  icon = icon("paint-brush")), ma$theme),
+      hr(),
+      fileInput("plots_rds", "Load ggplot (.rds, multiple)", accept = ".rds", multiple = TRUE),
+      actionButton("load_demo", "Load 3 demo plots", class = "btn btn-link")
+    )
+  })
+  
+  # Persist and guard mainmenu selection
+  observeEvent(input$mainmenu, {
+    ma <- menu_activation()
+    blocked <- c(
+      if (!isTRUE(ma$export)) "export" else NULL,
+      if (!isTRUE(ma$text))   "text"   else NULL,
+      if (!isTRUE(ma$theme))  "theme"  else NULL,
+      if (!isTRUE(ma$grid))   "grid"   else NULL
+    )
+    if (!is.null(input$mainmenu) && input$mainmenu %in% blocked) {
+      # choose best allowed target
+      allowed <- names(Filter(isTRUE, ma))
+      pref <- rv$last_mainmenu
+      target <- if (!is.null(pref) && pref %in% allowed) pref else if (length(allowed)) allowed[[1]] else "text"
+      updateTabItems(session, "mainmenu", target)
+    } else if (!is.null(input$mainmenu)) {
+      rv$last_mainmenu <- input$mainmenu
+    }
+  }, ignoreInit = FALSE)
+  
+  # Update main menu selection when switching plot tabs
+  observeEvent(rv$active_tab, {
+    if (is.null(rv$active_tab)) return()
+    
+    # Update main menu selection
+    if (identical(rv$active_tab, "Grid")) {
+      updateTabItems(session, "mainmenu", "grid")
+    } else if (length(rv$plots) > 0) {
+      # For plot tabs, ensure we have fresh edits for this specific plot
+      # Only ensure edits if we don't already have originals for this plot
+      # This prevents unnecessary re-extraction and potential inheritance issues
+      if (is.null(rv$originals[[rv$active_tab]]) || length(rv$originals[[rv$active_tab]]) == 0) {
+        ensure_edits(rv, rv$active_tab, grid = FALSE)
+      }
+      
+      # If this is the first time switching to a plot (no last_mainmenu set),
+      # default to "text" instead of staying on "grid"
+      target_menu <- if (is.null(rv$last_mainmenu) || rv$last_mainmenu == "grid") "text" else rv$last_mainmenu
+      updateTabItems(session, "mainmenu", target_menu)
+    }
+  }, ignoreInit = FALSE)
+  
+  
   
   # --- Demo loader & .rds loader --------------------------------------
   observeEvent(input$load_demo, {
@@ -24,7 +99,19 @@ app_server <- function(input, output, session) {
         labs(title = "Iris sepal", subtitle = "Demo 2", x = "Sepal L", y = "Sepal W", color = "Species"),
       Demo3 = ggplot(mpg, aes(displ, hwy, color = class)) +
         geom_point(alpha = 0.8) + theme_light(base_size = BASE$base_size) +
-        labs(title = "Engine vs Hwy", subtitle = "Demo 3", x = "Displ", y = "Highway", color = "Class")
+        labs(title = "Engine vs Hwy", subtitle = "Demo 3", x = "Displ", y = "Highway", color = "Class"),
+      Demo4 = ggplot(mtcars, aes(wt, mpg, color = qsec)) +
+        geom_point(alpha = 0.8, size = 2) + 
+        scale_color_viridis_c(option = "plasma") +
+        theme_classic(base_size = 14) +
+        labs(title = "Fuel efficiency vs weight", subtitle = "Demo 4 - Continuous color",
+             x = "Weight (1000 lbs)", y = "MPG", color = "Quarter mile time", caption = "mtcars dataset"),
+      Demo5 = ggplot(ChickWeight, aes(Time, weight, fill = Diet)) +
+        geom_bar(stat = "summary", fun = "mean", position = "dodge") +
+        scale_fill_brewer(palette = "Set2") +
+        theme_minimal(base_size = 16) +
+        labs(title = "Chicken growth by diet", subtitle = "Demo 5 - Bar plot with fill",
+             x = "Time (days)", y = "Weight (gm)", fill = "Diet type", caption = "ChickWeight dataset")
     )
     lapply(names(rv$plots), function(nm) ensure_edits(rv, nm))
     select_first_plot(rv, session)
@@ -80,7 +167,11 @@ app_server <- function(input, output, session) {
         name <- nm
         output[[paste0("plot_prev_", name)]] <- renderPlot({
           req(!is.null(rv$plots[[name]]))
-          ensure_edits(rv, name)
+          # Only ensure edits if we don't already have originals for this plot
+          # This prevents unnecessary re-extraction and potential inheritance issues
+          if (is.null(rv$originals[[name]]) || length(rv$originals[[name]]) == 0) {
+            ensure_edits(rv, name)
+          }
           apply_edits(rv$plots[[name]], rv$edits[[name]])
         })
       })
@@ -193,6 +284,28 @@ app_server <- function(input, output, session) {
   # --- Sidebar panes (render) ------------------------------------------
   output$subsidebar <- renderUI({
     cur <- input$mainmenu %||% "grid"
+    
+    # Check if the current menu item should be active
+    activation <- menu_activation()
+    if (cur == "text" && !activation$text) {
+      return(div(
+        h4("Text"),
+        helpText("Text editing is only available when viewing individual plots, not the grid layout.")
+      ))
+    }
+    if (cur == "theme" && !activation$theme) {
+      return(div(
+        h4("Theme"),
+        helpText("Theme editing is only available when viewing individual plots, not the grid layout.")
+      ))
+    }
+    if (cur == "export" && !activation$export) {
+      return(div(
+        h4("Export"),
+        helpText("Please load some plots first to access export options.")
+      ))
+    }
+    
     switch(cur,
            grid   = grid_pane_ui(rv),
            export = export_pane_ui(rv),
