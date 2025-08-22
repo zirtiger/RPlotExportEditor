@@ -95,7 +95,19 @@ app_server <- function(input, output, session) {
         labs(title = "Iris sepal", subtitle = "Demo 2", x = "Sepal L", y = "Sepal W", color = "Species"),
       Demo3 = ggplot(mpg, aes(displ, hwy, color = class)) +
         geom_point(alpha = 0.8) + theme_light(base_size = BASE$base_size) +
-        labs(title = "Engine vs Hwy", subtitle = "Demo 3", x = "Displ", y = "Highway", color = "Class")
+        labs(title = "Engine vs Hwy", subtitle = "Demo 3", x = "Displ", y = "Highway", color = "Class"),
+      Demo4 = ggplot(diamonds, aes(carat, price, color = depth)) +
+        geom_point(alpha = 0.6, size = 1.5) + 
+        scale_color_viridis_c(option = "plasma") +
+        theme_classic(base_size = 14) +
+        labs(title = "Diamond pricing", subtitle = "Demo 4 - Continuous color",
+             x = "Carat", y = "Price ($)", color = "Depth", caption = "diamonds dataset"),
+      Demo5 = ggplot(ChickWeight, aes(Time, weight, fill = Diet)) +
+        geom_bar(stat = "summary", fun = "mean", position = "dodge") +
+        scale_fill_brewer(palette = "Set2") +
+        theme_minimal(base_size = 16) +
+        labs(title = "Chicken growth by diet", subtitle = "Demo 5 - Bar plot with fill",
+             x = "Time (days)", y = "Weight (gm)", fill = "Diet type", caption = "ChickWeight dataset")
     )
     lapply(names(rv$plots), function(nm) ensure_edits(rv, nm))
     select_first_plot(rv, session)
