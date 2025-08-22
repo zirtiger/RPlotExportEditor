@@ -230,78 +230,78 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 									}
 								}
 							}
-						}, error = function(e) {
-							# If ggplot_build fails, try a different approach
-						})
-						
-						# If we couldn't extract colors, try to get them from the plot's scales
-						if (length(colors) == 0) {
-							tryCatch({
-								# Check if there's a manual scale
-								if (aes_name == "colour" || aes_name == "color") {
-									if (!is.null(p$scales$scales)) {
-										for (scale in p$scales$scales) {
-											if (scale$aesthetics == "colour" || scale$aesthetics == "color") {
-												if (inherits(scale, "ScaleDiscrete")) {
-													colors <- as.character(scale$palette(scale$range$range))
-													break
-												}
-											}
-										}
-									}
-								} else if (aes_name == "fill") {
-									if (!is.null(p$scales$scales)) {
-										for (scale in p$scales$scales) {
-											if (scale$aesthetics == "fill") {
-												if (inherits(scale, "ScaleDiscrete")) {
-													colors <- as.character(scale$palette(scale$range$range))
-													break
-												}
+						}
+					}, error = function(e) {
+						# If ggplot_build fails, try a different approach
+					})
+					
+					# If we couldn't extract colors, try to get them from the plot's scales
+					if (length(colors) == 0) {
+						tryCatch({
+							# Check if there's a manual scale
+							if (aes_name == "colour" || aes_name == "color") {
+								if (!is.null(p$scales$scales)) {
+									for (scale in p$scales$scales) {
+										if (scale$aesthetics == "colour" || scale$aesthetics == "color") {
+											if (inherits(scale, "ScaleDiscrete")) {
+												colors <- as.character(scale$palette(scale$range$range))
+												break
 											}
 										}
 									}
 								}
-							}, error = function(e) {
-								# If scale extraction fails, fall back to default colors
-							})
-						}
-						
-						# If we still don't have colors, use default viridis
-						if (length(colors) == 0 || length(colors) != length(levels)) {
-							colors <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(levels)) else grDevices::rainbow(length(levels))
-						}
+							} else if (aes_name == "fill") {
+								if (!is.null(p$scales$scales)) {
+									for (scale in p$scales$scales) {
+										if (scale$aesthetics == "fill") {
+											if (inherits(scale, "ScaleDiscrete")) {
+												colors <- as.character(scale$palette(scale$range$range))
+												break
+											}
+										}
+									}
+								}
+							}
+						}, error = function(e) {
+							# If scale extraction fails, fall back to default colors
+						})
 					}
 					
-					list(levels = levels, colors = colors)
+					# If we still don't have colors, use default viridis
+					if (length(colors) == 0 || length(colors) != length(levels)) {
+						colors <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(levels)) else grDevices::rainbow(length(levels))
+					}
 				}
 				
-				col_result <- extract_levels_from_plot(p, "colour")
-				fill_result <- extract_levels_from_plot(p, "fill")
-				
-				if (length(col_result$levels)) {
-					rv[[orig_bucket]][[name]]$colour_levels <- col_result$levels
-					rv[[orig_bucket]][[name]]$colour_levels_cols <- col_result$colors
-				}
-				if (length(fill_result$levels)) {
-					rv[[orig_bucket]][[name]]$fill_levels <- fill_result$levels
-					rv[[orig_bucket]][[name]]$fill_levels_cols <- fill_result$colors
-				}
+				list(levels = levels, colors = colors)
 			}
 			
-			# Initialize edits with original values (if edits are empty)
-			if (length(rv[[bucket]][[name]]) == 0) {
-				rv[[bucket]][[name]] <- rv[[orig_bucket]][[name]]
+			col_result <- extract_levels_from_plot(p, "colour")
+			fill_result <- extract_levels_from_plot(p, "fill")
+			
+			if (length(col_result$levels)) {
+				rv[[orig_bucket]][[name]]$colour_levels <- col_result$levels
+				rv[[orig_bucket]][[name]]$colour_levels_cols <- col_result$colors
+			}
+			if (length(fill_result$levels)) {
+				rv[[orig_bucket]][[name]]$fill_levels <- fill_result$levels
+				rv[[orig_bucket]][[name]]$fill_levels_cols <- fill_result$colors
 			}
 		}
 		
-		if (!grid && is.null(rv$export[[name]])) {
-			rv$export[[name]] <- list(
-				width_mm  = BASE$width_mm,
-				height_mm = BASE$height_mm,
-				dpi       = BASE$dpi,
-				format    = BASE$format
-			)
+		# Initialize edits with original values (if edits are empty)
+		if (length(rv[[bucket]][[name]]) == 0) {
+			rv[[bucket]][[name]] <- rv[[orig_bucket]][[name]]
 		}
+	}
+	
+	if (!grid && is.null(rv$export[[name]])) {
+		rv$export[[name]] <- list(
+			width_mm  = BASE$width_mm,
+			height_mm = BASE$height_mm,
+			dpi       = BASE$dpi,
+			format    = BASE$format
+		)
 	}
 }
 
