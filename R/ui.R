@@ -27,21 +27,17 @@ app_ui <- function(request = NULL) {
       style = "margin: 0; padding: 0;",
       column(
         width = 3,
-        style = "padding: 0;",
-        shinydashboard::box(
-          title = NULL,
-          width = 12, status = "primary", solidHeader = FALSE,
-          height = "90vh",
+        style = "padding: 0; margin: 0;",
+        div(
+          style = "height: 90vh; background: white; border: none; padding: 0; margin: 0;",
           uiOutput("subsidebar")   # pane content (Grid/Export/Text/Theme)
         )
       ),
       column(
         width = 9,
-        style = "padding: 0;",
-        shinydashboard::box(
-          title = NULL,
-          width = 12, status = "primary", solidHeader = FALSE,
-          height = "90vh",
+        style = "padding: 0; margin: 0;",
+        div(
+          style = "height: 90vh; background: white; border: none; padding: 0; margin: 0;",
           uiOutput("tabs_area")    # Grid + one tab per plot (previews)
         )
       )
