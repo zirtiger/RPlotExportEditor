@@ -86,7 +86,10 @@ theme_pane_ui <- function(rv) {
 	}
 	
 	tagList(
-		actionButton("apply_all_theme", "Use for all plots", class = "btn btn-sm btn-default btn-block"),
+		div(style="display:flex; gap:8px; margin-bottom:8px;",
+			actionButton("apply_all_theme", "Use for all plots", class = "btn btn-sm btn-default"),
+			actionButton("ui_revert_all_theme", "Revert All to Original", class = "btn btn-sm btn-warning")
+		),
 		tags$hr(),
 		h4(sprintf("Theme — %s", ap)),
 		tags$hr(),
@@ -273,6 +276,19 @@ register_theme_observers <- function(input, rv, session) {
 		rv$edits[[ap]]$palette <- "None"
 		
 		showNotification("Colors reverted to original", type = "message")
+	}, ignoreInit = TRUE)
+	
+	# General revert to original for all theme settings
+	observeEvent(input$ui_revert_all_theme, {
+		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+		ensure_edits(rv, ap, grid = FALSE)
+		
+		# Revert all theme settings to original
+		if (!is.null(rv$originals[[ap]])) {
+			rv$edits[[ap]] <- rv$originals[[ap]]
+		}
+		
+		showNotification("All theme settings reverted to original", type = "message")
 	}, ignoreInit = TRUE)
 	
 	observeEvent(input$ui_apply_palette_levels, {

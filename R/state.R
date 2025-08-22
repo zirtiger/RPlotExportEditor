@@ -15,7 +15,8 @@ init_reactive_state <- function() {
 			export = "Dimensions",
 			grid = "Layout"
 		),
-		is_hydrating = FALSE     # Prevent observers during state restoration
+		is_hydrating = FALSE,    # Prevent observers during state restoration
+		force_ui_update = 0      # Force UI updates when switching plots
 	)
 }
 
@@ -117,37 +118,59 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 			min_el <- get_theme_elem("panel.grid.minor")
 			lbox   <- get_theme_elem("legend.box.background")
 			
+			# Store ALL original values
 			rv[[orig_bucket]][[name]] <- list(
+				# Labels
 				title      = get_lab("title"),
 				subtitle   = get_lab("subtitle"),
 				caption    = get_lab("caption"),
 				xlab       = get_lab("x"),
 				ylab       = get_lab("y"),
+				
+				# Theme
 				theme      = BASE$theme,
 				base_size  = BASE$base_size,
 				legend_pos = BASE$legend_pos,
 				legend_box = if (!is.null(lbox)) !is_blank(lbox) else NULL,
 				panel_bg   = NULL,
 				plot_bg    = NULL,
+				
+				# Grid
 				grid_major = if (!is.null(maj_el)) !is_blank(maj_el) else NULL,
 				grid_minor = if (!is.null(min_el)) !is_blank(min_el) else NULL,
 				grid_major_linetype = tryCatch(maj_el$linetype, error = function(...) NULL),
 				grid_minor_linetype = tryCatch(min_el$linetype, error = function(...) NULL),
+				grid_color = NULL,
 				
-				# axis limits
+				# Axis limits
 				x_min      = x_info$min,
 				x_max      = x_info$max,
 				y_min      = y_info$min,
 				y_max      = y_info$max,
-				# step suggestions
+				
+				# Step suggestions
 				x_step_major = x_info$step_major,
 				x_step_minor = x_info$step_minor,
 				y_step_major = y_info$step_major,
-				y_step_minor = y_info$step_minor
+				y_step_minor = y_info$step_minor,
+				
+				# Colors
+				palette = "None",
+				continuous_colour_palette = NULL,
+				continuous_fill_palette = NULL,
+				
+				# Text sizes
+				title_size = NULL,
+				subtitle_size = NULL,
+				caption_size = NULL,
+				axis_title_size = NULL,
+				axis_text_size = NULL,
+				legend_title_size = NULL,
+				legend_text_size = NULL
 			)
 			
-			# Seed colour/fill levels with actual colors from the plot (if present)
-			eval_levels <- function(p, aes_name) {
+			# Extract original color levels and colors
+			extract_levels_from_plot <- function(p, aes_name) {
 				if (!requireNamespace("rlang", quietly = TRUE)) return(list(levels = character(0), colors = character(0)))
 				collect <- character(0)
 				alt_aes <- if (identical(aes_name, "colour")) "color" else aes_name
@@ -207,78 +230,78 @@ ensure_edits <- function(rv, name, grid = FALSE) {
 									}
 								}
 							}
-						}
-					}, error = function(e) {
-						# If ggplot_build fails, try a different approach
-					})
-					
-					# If we couldn't extract colors, try to get them from the plot's scales
-					if (length(colors) == 0) {
-						tryCatch({
-							# Check if there's a manual scale
-							if (aes_name == "colour" || aes_name == "color") {
-								if (!is.null(p$scales$scales)) {
-									for (scale in p$scales$scales) {
-										if (scale$aesthetics == "colour" || scale$aesthetics == "color") {
-											if (inherits(scale, "ScaleDiscrete")) {
-												colors <- as.character(scale$palette(scale$range$range))
-												break
-											}
-										}
-									}
-								}
-							} else if (aes_name == "fill") {
-								if (!is.null(p$scales$scales)) {
-									for (scale in p$scales$scales) {
-										if (scale$aesthetics == "fill") {
-											if (inherits(scale, "ScaleDiscrete")) {
-												colors <- as.character(scale$palette(scale$range$range))
-												break
-											}
-										}
-									}
-								}
-							}
 						}, error = function(e) {
-							# If scale extraction fails, fall back to default colors
+							# If ggplot_build fails, try a different approach
 						})
+						
+						# If we couldn't extract colors, try to get them from the plot's scales
+						if (length(colors) == 0) {
+							tryCatch({
+								# Check if there's a manual scale
+								if (aes_name == "colour" || aes_name == "color") {
+									if (!is.null(p$scales$scales)) {
+										for (scale in p$scales$scales) {
+											if (scale$aesthetics == "colour" || scale$aesthetics == "color") {
+												if (inherits(scale, "ScaleDiscrete")) {
+													colors <- as.character(scale$palette(scale$range$range))
+													break
+												}
+											}
+										}
+									}
+								} else if (aes_name == "fill") {
+									if (!is.null(p$scales$scales)) {
+										for (scale in p$scales$scales) {
+											if (scale$aesthetics == "fill") {
+												if (inherits(scale, "ScaleDiscrete")) {
+													colors <- as.character(scale$palette(scale$range$range))
+													break
+												}
+											}
+										}
+									}
+								}
+							}, error = function(e) {
+								# If scale extraction fails, fall back to default colors
+							})
+						}
+						
+						# If we still don't have colors, use default viridis
+						if (length(colors) == 0 || length(colors) != length(levels)) {
+							colors <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(levels)) else grDevices::rainbow(length(levels))
+						}
 					}
 					
-					# If we still don't have colors, use default viridis
-					if (length(colors) == 0 || length(colors) != length(levels)) {
-						colors <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(levels)) else grDevices::rainbow(length(levels))
-					}
+					list(levels = levels, colors = colors)
 				}
 				
-				list(levels = levels, colors = colors)
+				col_result <- extract_levels_from_plot(p, "colour")
+				fill_result <- extract_levels_from_plot(p, "fill")
+				
+				if (length(col_result$levels)) {
+					rv[[orig_bucket]][[name]]$colour_levels <- col_result$levels
+					rv[[orig_bucket]][[name]]$colour_levels_cols <- col_result$colors
+				}
+				if (length(fill_result$levels)) {
+					rv[[orig_bucket]][[name]]$fill_levels <- fill_result$levels
+					rv[[orig_bucket]][[name]]$fill_levels_cols <- fill_result$colors
+				}
 			}
 			
-			col_result <- eval_levels(p, "colour")
-			fill_result <- eval_levels(p, "fill")
-			
-			if (length(col_result$levels)) {
-				rv[[orig_bucket]][[name]]$colour_levels <- col_result$levels
-				rv[[orig_bucket]][[name]]$colour_levels_cols <- col_result$colors
-			}
-			if (length(fill_result$levels)) {
-				rv[[orig_bucket]][[name]]$fill_levels <- fill_result$levels
-				rv[[orig_bucket]][[name]]$fill_levels_cols <- fill_result$colors
+			# Initialize edits with original values (if edits are empty)
+			if (length(rv[[bucket]][[name]]) == 0) {
+				rv[[bucket]][[name]] <- rv[[orig_bucket]][[name]]
 			}
 		}
 		
-		# Initialize edits with original values (if edits are empty)
-		if (length(rv[[bucket]][[name]]) == 0) {
-			rv[[bucket]][[name]] <- rv[[orig_bucket]][[name]]
+		if (!grid && is.null(rv$export[[name]])) {
+			rv$export[[name]] <- list(
+				width_mm  = BASE$width_mm,
+				height_mm = BASE$height_mm,
+				dpi       = BASE$dpi,
+				format    = BASE$format
+			)
 		}
-	}
-	
-	if (!grid && is.null(rv$export[[name]])) {
-		rv$export[[name]] <- list(
-			width_mm  = BASE$width_mm,
-			height_mm = BASE$height_mm,
-			dpi       = BASE$dpi,
-			format    = BASE$format
-		)
 	}
 }
 
