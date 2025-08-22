@@ -18,6 +18,33 @@ apply_edits <- function(p, edits) {
   # Colors: apply per-level mappings using limits-aligned values to avoid name mismatch
   apply_level_colors <- function(p) {
     try_apply <- function(expr, p) { tryCatch({ expr }, error = function(...) p) }
+    
+    # Apply continuous palettes first (if present)
+    if (!is.null(e$continuous_colour_palette) && e$continuous_colour_palette != "None") {
+      palette_func <- switch(e$continuous_colour_palette,
+        "viridis" = viridisLite::viridis,
+        "magma" = viridisLite::magma,
+        "plasma" = viridisLite::plasma,
+        "inferno" = viridisLite::inferno,
+        "cividis" = viridisLite::cividis,
+        viridisLite::viridis
+      )
+      p <- try_apply(p + ggplot2::scale_color_viridis_c(option = e$continuous_colour_palette), p)
+    }
+    
+    if (!is.null(e$continuous_fill_palette) && e$continuous_fill_palette != "None") {
+      palette_func <- switch(e$continuous_fill_palette,
+        "viridis" = viridisLite::viridis,
+        "magma" = viridisLite::magma,
+        "plasma" = viridisLite::plasma,
+        "inferno" = viridisLite::inferno,
+        "cividis" = viridisLite::cividis,
+        viridisLite::viridis
+      )
+      p <- try_apply(p + ggplot2::scale_fill_viridis_c(option = e$continuous_fill_palette), p)
+    }
+    
+    # Apply discrete level colors
     # colour levels
     if (!is.null(e$colour_levels) && !is.null(e$colour_levels_cols)) {
       lv <- as.character(e$colour_levels)

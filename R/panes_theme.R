@@ -236,30 +236,63 @@ register_theme_observers <- function(input, rv, session) {
 		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
 		ensure_edits(rv, ap, grid = FALSE)
 		pal <- rv$edits[[ap]]$palette %||% "None"
-		# compute current levels
-		get_levels <- function(p, aes_name) {
-			gb <- try(ggplot2::ggplot_build(p), silent = TRUE)
-			if (inherits(gb, "try-error")) return(character(0))
-			vals <- unlist(lapply(gb$data, function(d) d[[aes_name]]))
-			vals <- unique(vals)
-			vals <- vals[!is.na(vals)]
-			as.character(vals)
+		
+		# Check if the plot has continuous scales that we can apply palette to directly
+		has_continuous_colour <- FALSE
+		has_continuous_fill <- FALSE
+		
+		tryCatch({
+			built <- ggplot2::ggplot_build(rv$plots[[ap]])
+			if (!is.null(built$data) && length(built$data) > 0) {
+				for (layer_data in built$data) {
+					if (is.data.frame(layer_data) && nrow(layer_data) > 0) {
+						# Check for continuous colour/fill
+						if ("colour" %in% names(layer_data) && is.numeric(layer_data$colour)) {
+							has_continuous_colour <- TRUE
+						}
+						if ("fill" %in% names(layer_data) && is.numeric(layer_data$fill)) {
+							has_continuous_fill <- TRUE
+						}
+					}
+				}
+			}
+		}, error = function(e) {
+			# If ggplot_build fails, assume discrete
+		})
+		
+		# For continuous scales, apply palette directly to the plot
+		if (has_continuous_colour && pal != "None") {
+			rv$edits[[ap]]$continuous_colour_palette <- pal
 		}
-		pobj <- rv$plots[[ap]]
-		cols <- function(n) {
-			if (!requireNamespace("viridisLite", quietly = TRUE)) return(grDevices::rainbow(n))
-			viridisLite::viridis(n, option = if (pal == "None") "viridis" else pal)
+		if (has_continuous_fill && pal != "None") {
+			rv$edits[[ap]]$continuous_fill_palette <- pal
 		}
-		colour_lvls <- get_levels(pobj, "colour"); if (length(colour_lvls)) {
-			clrs <- cols(length(colour_lvls))
-			rv$edits[[ap]]$colour_levels <- colour_lvls
-			rv$edits[[ap]]$colour_levels_cols <- clrs
+		
+		# For discrete levels, just generate colors for the existing level pickers
+		# Don't overwrite the level names, just update the colors
+		e <- rv$edits[[ap]]
+		
+		# Generate colors for existing colour levels
+		if (!is.null(e$colour_levels) && length(e$colour_levels) > 0) {
+			cols <- if (requireNamespace("viridisLite", quietly = TRUE)) {
+				viridisLite::viridis(length(e$colour_levels), option = if (pal == "None") "viridis" else pal)
+			} else {
+				grDevices::rainbow(length(e$colour_levels))
+			}
+			rv$edits[[ap]]$colour_levels_cols <- cols
 		}
-		fill_lvls <- get_levels(pobj, "fill"); if (length(fill_lvls)) {
-			clrs <- cols(length(fill_lvls))
-			rv$edits[[ap]]$fill_levels <- fill_lvls
-			rv$edits[[ap]]$fill_levels_cols <- clrs
+		
+		# Generate colors for existing fill levels
+		if (!is.null(e$fill_levels) && length(e$fill_levels) > 0) {
+			cols <- if (requireNamespace("viridisLite", quietly = TRUE)) {
+				viridisLite::viridis(length(e$fill_levels), option = if (pal == "None") "viridis" else pal)
+			} else {
+				grDevices::rainbow(length(e$fill_levels))
+			}
+			rv$edits[[ap]]$fill_levels_cols <- cols
 		}
+		
+		showNotification("Palette applied to existing levels", type = "message")
 	}, ignoreInit = TRUE)
 	
 	# Dynamic level color pickers - simple approach that only updates on valid changes
