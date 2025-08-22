@@ -56,61 +56,44 @@ apply_edits <- function(p, edits) {
     }
   }
   
-  # Axis breaks
-  # Prefer step-based breaks when provided
-  if (!is.null(e$x_min) && !is.null(e$x_max)) {
-    x_min_val <- if (is.finite(e$x_min)) e$x_min else 0
-    x_max_val <- if (is.finite(e$x_max)) e$x_max else 10
-    if (!is.null(e$x_step_minor) && is.finite(e$x_step_minor) && e$x_step_minor > 0) {
-      x_minor_breaks <- seq(x_min_val, x_max_val, by = e$x_step_minor)
-    } else if (!is.null(e$x_minor) && is.finite(e$x_minor) && e$x_minor > 0) {
-      x_minor_breaks <- seq(x_min_val, x_max_val, length.out = max(1, e$x_minor + 1))
-    } else x_minor_breaks <- waiver()
-    
-    if (!is.null(e$x_step_major) && is.finite(e$x_step_major) && e$x_step_major > 0) {
-      x_breaks <- seq(x_min_val, x_max_val, by = e$x_step_major)
-    } else if (!is.null(e$x_major) && is.finite(e$x_major) && e$x_major > 0) {
-      x_breaks <- seq(x_min_val, x_max_val, length.out = max(1, e$x_major + 1))
-    } else x_breaks <- waiver()
-    
-    p <- p + ggplot2::scale_x_continuous(breaks = x_breaks, minor_breaks = x_minor_breaks)
+  # Axis breaks — prefer step-based and use scales::breaks_width for clean ticks
+  if (!is.null(e$x_step_major) && is.finite(e$x_step_major) && e$x_step_major > 0) {
+    x_major_br <- scales::breaks_width(e$x_step_major)
+  } else {
+    x_major_br <- ggplot2::waiver()
+  }
+  if (!is.null(e$x_step_minor) && is.finite(e$x_step_minor) && e$x_step_minor > 0) {
+    x_minor_br <- scales::breaks_width(e$x_step_minor)
+  } else {
+    x_minor_br <- ggplot2::waiver()
+  }
+  if (!identical(x_major_br, ggplot2::waiver()) || !identical(x_minor_br, ggplot2::waiver())) {
+    p <- p + ggplot2::scale_x_continuous(breaks = x_major_br, minor_breaks = x_minor_br)
   } else if (!is.null(e$x_major) || !is.null(e$x_minor)) {
     x_min_val <- if (!is.null(e$x_min) && is.finite(e$x_min)) e$x_min else 0
     x_max_val <- if (!is.null(e$x_max) && is.finite(e$x_max)) e$x_max else 10
-    x_breaks <- if (!is.null(e$x_major) && is.finite(e$x_major) && e$x_major > 0) {
-      seq(x_min_val, x_max_val, length.out = max(1, e$x_major + 1))
-    } else waiver()
-    x_minor_breaks <- if (!is.null(e$x_minor) && is.finite(e$x_minor) && e$x_minor > 0) {
-      seq(x_min_val, x_max_val, length.out = max(1, e$x_minor + 1))
-    } else waiver()
+    x_breaks <- if (!is.null(e$x_major) && is.finite(e$x_major) && e$x_major > 0) seq(x_min_val, x_max_val, length.out = max(1, e$x_major + 1)) else ggplot2::waiver()
+    x_minor_breaks <- if (!is.null(e$x_minor) && is.finite(e$x_minor) && e$x_minor > 0) seq(x_min_val, x_max_val, length.out = max(1, e$x_minor + 1)) else ggplot2::waiver()
     p <- p + ggplot2::scale_x_continuous(breaks = x_breaks, minor_breaks = x_minor_breaks)
   }
   
-  if (!is.null(e$y_min) && !is.null(e$y_max)) {
-    y_min_val <- if (is.finite(e$y_min)) e$y_min else 0
-    y_max_val <- if (is.finite(e$y_max)) e$y_max else 10
-    if (!is.null(e$y_step_minor) && is.finite(e$y_step_minor) && e$y_step_minor > 0) {
-      y_minor_breaks <- seq(y_min_val, y_max_val, by = e$y_step_minor)
-    } else if (!is.null(e$y_minor) && is.finite(e$y_minor) && e$y_minor > 0) {
-      y_minor_breaks <- seq(y_min_val, y_max_val, length.out = max(1, e$y_minor + 1))
-    } else y_minor_breaks <- waiver()
-    
-    if (!is.null(e$y_step_major) && is.finite(e$y_step_major) && e$y_step_major > 0) {
-      y_breaks <- seq(y_min_val, y_max_val, by = e$y_step_major)
-    } else if (!is.null(e$y_major) && is.finite(e$y_major) && e$y_major > 0) {
-      y_breaks <- seq(y_min_val, y_max_val, length.out = max(1, e$y_major + 1))
-    } else y_breaks <- waiver()
-    
-    p <- p + ggplot2::scale_y_continuous(breaks = y_breaks, minor_breaks = y_minor_breaks)
+  if (!is.null(e$y_step_major) && is.finite(e$y_step_major) && e$y_step_major > 0) {
+    y_major_br <- scales::breaks_width(e$y_step_major)
+  } else {
+    y_major_br <- ggplot2::waiver()
+  }
+  if (!is.null(e$y_step_minor) && is.finite(e$y_step_minor) && e$y_step_minor > 0) {
+    y_minor_br <- scales::breaks_width(e$y_step_minor)
+  } else {
+    y_minor_br <- ggplot2::waiver()
+  }
+  if (!identical(y_major_br, ggplot2::waiver()) || !identical(y_minor_br, ggplot2::waiver())) {
+    p <- p + ggplot2::scale_y_continuous(breaks = y_major_br, minor_breaks = y_minor_br)
   } else if (!is.null(e$y_major) || !is.null(e$y_minor)) {
     y_min_val <- if (!is.null(e$y_min) && is.finite(e$y_min)) e$y_min else 0
     y_max_val <- if (!is.null(e$y_max) && is.finite(e$y_max)) e$y_max else 10
-    y_breaks <- if (!is.null(e$y_major) && is.finite(e$y_major) && e$y_major > 0) {
-      seq(y_min_val, y_max_val, length.out = max(1, e$y_major + 1))
-    } else waiver()
-    y_minor_breaks <- if (!is.null(e$y_minor) && is.finite(e$y_minor) && e$y_minor > 0) {
-      seq(y_min_val, y_max_val, length.out = max(1, e$y_minor + 1))
-    } else waiver()
+    y_breaks <- if (!is.null(e$y_major) && is.finite(e$y_major) && e$y_major > 0) seq(y_min_val, y_max_val, length.out = max(1, e$y_major + 1)) else ggplot2::waiver()
+    y_minor_breaks <- if (!is.null(e$y_minor) && is.finite(e$y_minor) && e$y_minor > 0) seq(y_min_val, y_max_val, length.out = max(1, e$y_minor + 1)) else ggplot2::waiver()
     p <- p + ggplot2::scale_y_continuous(breaks = y_breaks, minor_breaks = y_minor_breaks)
   }
   
