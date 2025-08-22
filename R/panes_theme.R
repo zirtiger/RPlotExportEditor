@@ -30,21 +30,27 @@ theme_pane_ui <- function(rv) {
 			if (!is.null(mapping[[alt_aes]])) return(mapping[[alt_aes]])
 			NULL
 		}
-		append_vals <- function(dat, expr) {
-			if (is.null(expr) || is.null(dat)) return()
+		eval_on <- function(dat, expr) {
+			if (is.null(expr) || is.null(dat)) return(NULL)
+			if (!is.data.frame(dat) || nrow(dat) == 0) return(NULL)
+			if (!requireNamespace("rlang", quietly = TRUE)) return(NULL)
 			vals <- try(rlang::eval_tidy(expr, data = dat), silent = TRUE)
-			if (inherits(vals, "try-error") || is.null(vals)) return()
+			if (inherits(vals, "try-error") || is.null(vals)) return(NULL)
+			vals
+		}
+		append_vals <- function(vals) {
+			if (is.null(vals)) return()
 			vals <- vals[!is.na(vals)]
 			if (is.factor(vals)) collect <<- c(collect, as.character(levels(vals))) else collect <<- c(collect, unique(as.character(vals)))
 		}
 		# plot-level
 		expr_p <- get_expr(p$mapping)
-		append_vals(p$data, expr_p)
+		append_vals(eval_on(p$data, expr_p))
 		# layers
 		if (!is.null(p$layers) && length(p$layers)) {
 			for (ly in p$layers) {
 				expr_l <- get_expr(ly$mapping) %||% expr_p
-				append_vals(ly$data %||% p$data, expr_l)
+				append_vals(eval_on(ly$data %||% p$data, expr_l))
 			}
 		}
 		unique(collect[nzchar(collect)])
