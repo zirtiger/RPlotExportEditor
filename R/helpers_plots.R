@@ -458,10 +458,17 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 	}
 	
 	# Extract theme settings (only if explicitly set)
-	extract_theme_size <- function(elem) {
+	extract_theme_size <- function(elem, plot_obj) {
 		theme_elem <- get_theme_elem(elem)
 		if (!is.null(theme_elem) && !is_blank(theme_elem) && !is.null(theme_elem$size)) {
-			# Return the relative size multiplier (e.g., 1.2 means 1.2 * base_size)
+			# Extract the base_size from the plot to calculate relative multiplier
+			plot_base_size <- extract_base_size(plot_obj) %||% BASE$base_size
+			if (!is.null(plot_base_size) && plot_base_size > 0) {
+				# Convert absolute size to relative multiplier
+				relative_size <- theme_elem$size / plot_base_size
+				return(relative_size)
+			}
+			# Fallback: return the raw size if we can't calculate relative
 			return(theme_elem$size)
 		}
 		return(NULL)
@@ -677,13 +684,13 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 		fill_levels_cols = fill_result$colors,
 		
 		# Text sizes (only if explicitly set in theme)
-		title_size = extract_theme_size("plot.title"),
-		subtitle_size = extract_theme_size("plot.subtitle"),
-		caption_size = extract_theme_size("plot.caption"),
-		axis_title_size = extract_theme_size("axis.title"),
-		axis_text_size = extract_theme_size("axis.text"),
-		legend_title_size = extract_theme_size("legend.title"),
-		legend_text_size = extract_theme_size("legend.text")
+		title_size = extract_theme_size("plot.title", plot_obj),
+		subtitle_size = extract_theme_size("plot.subtitle", plot_obj),
+		caption_size = extract_theme_size("plot.caption", plot_obj),
+		axis_title_size = extract_theme_size("axis.title", plot_obj),
+		axis_text_size = extract_theme_size("axis.text", plot_obj),
+		legend_title_size = extract_theme_size("legend.title", plot_obj),
+		legend_text_size = extract_theme_size("legend.text", plot_obj)
 	)
 	
 	# Remove NULL values (ggplot will handle these automatically)
