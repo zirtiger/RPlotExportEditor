@@ -133,44 +133,6 @@ resize_cells <- function(rv, rows, cols) {
   }
 }
 
-# Apply edits to a plot
-apply_edits <- function(plot_obj, edits) {
-  if (is.null(edits) || length(edits) == 0) return(plot_obj)
-  
-  # Apply theme changes
-  if (!is.null(edits$theme)) {
-    plot_obj <- plot_obj + get_theme_fun(edits$theme)()
-  }
-  
-  # Apply base size changes
-  if (!is.null(edits$base_size)) {
-    plot_obj <- plot_obj + theme(text = ggplot2::element_text(size = edits$base_size))
-  }
-  
-  # Apply legend position changes
-  if (!is.null(edits$legend_pos)) {
-    plot_obj <- plot_obj + theme(legend.position = edits$legend_pos)
-  }
-  
-  # Apply other theme customizations
-  if (!is.null(edits$panel_bg)) {
-    plot_obj <- plot_obj + theme(panel.background = ggplot2::element_rect(fill = edits$panel_bg))
-  }
-  
-  if (!is.null(edits$plot_bg)) {
-    plot_obj <- plot_obj + theme(plot.background = ggplot2::element_rect(fill = edits$plot_bg))
-  }
-  
-  if (!is.null(edits$grid_major)) {
-    plot_obj <- plot_obj + theme(panel.grid.major = ggplot2::element_line(color = edits$grid_major))
-  }
-  
-  if (!is.null(edits$grid_minor)) {
-    plot_obj <- plot_obj + theme(panel.grid.minor = ggplot2::element_line(color = edits$grid_minor))
-  }
-  
-  return(plot_obj)
-}
 
 # Export plot to file
 export_plot <- function(plot_obj, file_path, export_settings) {
