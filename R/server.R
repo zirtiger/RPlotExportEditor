@@ -89,7 +89,11 @@ app_server <- function(input, output, session) {
   
   # --- Demo loader & .rds loader --------------------------------------
   observeEvent(input$load_demo, {
-    rv$plots <- list(
+    # Store current count to know which plots are new
+    previous_count <- length(rv$plots)
+    
+    # Create demo plots and add them sequentially
+    demo_plots <- list(
       Demo1 = ggplot(mtcars, aes(wt, mpg, color = factor(cyl))) +
         geom_point(size = 3) + theme_minimal(base_size = BASE$base_size) +
         labs(title = "Fuel efficiency vs weight", subtitle = "Demo 1",
@@ -113,22 +117,39 @@ app_server <- function(input, output, session) {
         labs(title = "Chicken growth by diet", subtitle = "Demo 5 - Bar plot with fill",
              x = "Time (days)", y = "Weight (gm)", fill = "Diet type", caption = "ChickWeight dataset")
     )
-    lapply(names(rv$plots), function(nm) ensure_edits(rv, nm))
-    select_first_plot(rv, session)
+    
+    # Add each plot sequentially using the new system
+    for (plot_name in names(demo_plots)) {
+      add_plot(rv, demo_plots[[plot_name]], plot_name)
+    }
+    
+    # Select the first of the newly uploaded plots
+    first_new <- get_first_new_plot(rv, previous_count)
+    if (!is.null(first_new)) {
+      select_plot_by_index(rv, session, first_new)
+    }
   }, ignoreInit = TRUE)
   
   observeEvent(input$plots_rds, {
     files <- input$plots_rds
     if (is.null(files)) return()
+    
+    # Store current count to know which plots are new
+    previous_count <- length(rv$plots)
+    
     for (i in seq_len(nrow(files))) {
       obj <- try(readRDS(files$datapath[i]), silent = TRUE)
       if (inherits(obj, "ggplot")) {
         nm <- tools::file_path_sans_ext(files$name[i])
-        rv$plots[[nm]] <- obj
-        ensure_edits(rv, nm)
+        add_plot(rv, obj, nm)
       }
     }
-    select_first_plot(rv, session)
+    
+    # Select the first of the newly uploaded plots
+    first_new <- get_first_new_plot(rv, previous_count)
+    if (!is.null(first_new)) {
+      select_plot_by_index(rv, session, first_new)
+    }
   }, ignoreInit = TRUE)
   
   # --- Tabs & previews -------------------------------------------------
@@ -142,15 +163,19 @@ app_server <- function(input, output, session) {
                ),
                plotOutput("grid_preview", height = "65vh"))
     )
-    for (nm in names(rv$plots)) {
-      tabs[[length(tabs) + 1]] <- tabPanel(nm, value = nm,
+    
+    # Get plot indices in order
+    plot_indices <- get_plot_indices(rv)
+    for (index in plot_indices) {
+      plot_name <- get_plot_display_name(rv, index)
+      tabs[[length(tabs) + 1]] <- tabPanel(plot_name, value = plot_name,
                                            div(
                                              style = "margin-bottom: 10px;",
-                                             downloadButton(paste0("download_plot_", nm), 
-                                                          paste("Download", nm), 
+                                             downloadButton(paste0("download_plot_", plot_name), 
+                                                          paste("Download", plot_name), 
                                                           class = "btn btn-success")
                                            ),
-                                           plotOutput(paste0("plot_prev_", nm), height = "65vh"))
+                                           plotOutput(paste0("plot_prev_", plot_name), height = "65vh"))
     }
     do.call(tabsetPanel, c(id = "main_tabs", tabs))
   })
@@ -162,17 +187,16 @@ app_server <- function(input, output, session) {
   
   # Per-plot previews
   observe({
-    lapply(names(rv$plots), function(nm) {
+    plot_indices <- get_plot_indices(rv)
+    lapply(plot_indices, function(index) {
       local({
-        name <- nm
-        output[[paste0("plot_prev_", name)]] <- renderPlot({
-          req(!is.null(rv$plots[[name]]))
-          # Only ensure edits if we don't already have originals for this plot
-          # This prevents unnecessary re-extraction and potential inheritance issues
-          if (is.null(rv$originals[[name]]) || length(rv$originals[[name]]) == 0) {
-            ensure_edits(rv, name)
-          }
-          apply_edits(rv$plots[[name]], rv$edits[[name]])
+        index_str <- as.character(index)
+        plot_name <- get_plot_display_name(rv, index)
+        output[[paste0("plot_prev_", plot_name)]] <- renderPlot({
+          req(!is.null(rv$plots[[index_str]]))
+          # Load settings for this plot if needed
+          load_plot_settings(rv, index)
+          apply_edits(rv$plots[[index_str]], rv$edits[[index_str]])
         })
       })
     })
@@ -184,12 +208,14 @@ app_server <- function(input, output, session) {
     r <- rv$grid$rows %||% BASE$grid_rows
     c <- rv$grid$cols %||% BASE$grid_cols
     n <- r * c
-    picked <- names(rv$plots)[seq_len(min(n, length(rv$plots)))]
+    plot_indices <- get_plot_indices(rv)
+    picked <- plot_indices[seq_len(min(n, length(plot_indices)))]
     req(length(picked) > 0)
     
-    plots <- lapply(picked, function(nm) {
-      ensure_edits(rv, nm)
-      apply_edits(rv$plots[[nm]], rv$edits[[nm]])
+    plots <- lapply(picked, function(index) {
+      index_str <- as.character(index)
+      load_plot_settings(rv, index)
+      apply_edits(rv$plots[[index_str]], rv$edits[[index_str]])
     })
     
     patchwork::wrap_plots(plots, nrow = r, ncol = c,

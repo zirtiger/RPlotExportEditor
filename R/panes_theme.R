@@ -220,150 +220,199 @@ theme_pane_ui <- function(rv) {
 }
 
 register_theme_observers <- function(input, rv, session) {
+	# Helper function to get plot index from active tab
+	get_plot_index <- function() {
+		ap <- rv$active_tab
+		if (is.null(ap) || identical(ap, "Grid")) return(NULL)
+		
+		for (index in get_plot_indices(rv)) {
+			if (get_plot_display_name(rv, index) == ap) {
+				return(index)
+			}
+		}
+		return(NULL)
+	}
+	
 	observeEvent(input$ui_theme, {
 		if (rv$is_hydrating) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$theme <- input$ui_theme
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$theme <- input$ui_theme
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_base_size, {
 		if (rv$is_hydrating) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$base_size <- as_num_safe(input$ui_base_size)
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$base_size <- as_num_safe(input$ui_base_size)
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_legend_pos, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$legend_pos <- legend_pos_value(input$ui_legend_pos)
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$legend_pos <- legend_pos_value(input$ui_legend_pos)
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_legend_box, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$legend_box <- input$ui_legend_box
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$legend_box <- input$ui_legend_box
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_panel_bg, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$panel_bg <- input$ui_panel_bg
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$panel_bg <- input$ui_panel_bg
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_plot_bg, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$plot_bg <- input$ui_plot_bg
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$plot_bg <- input$ui_plot_bg
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_grid_major, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$grid_major <- input$ui_grid_major
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$grid_major <- input$ui_grid_major
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_grid_minor, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$grid_minor <- input$ui_grid_minor
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$grid_minor <- input$ui_grid_minor
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_grid_color, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$grid_color <- input$ui_grid_color
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$grid_color <- input$ui_grid_color
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_grid_major_linetype, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$grid_major_linetype <- input$ui_grid_major_linetype
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$grid_major_linetype <- input$ui_grid_major_linetype
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_grid_minor_linetype, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$grid_minor_linetype <- input$ui_grid_minor_linetype
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$grid_minor_linetype <- input$ui_grid_minor_linetype
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	# Colors tab
 	observeEvent(input$ui_palette, {
 		if (rv$is_hydrating) return()
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
 		
 		cat("\n=== PALETTE INPUT CHANGED ===\n")
-		cat("  Plot:", ap, "\n")
+		cat("  Plot:", plot_index, "\n")
 		cat("  New value:", input$ui_palette, "\n")
-		cat("  Current stored value:", get_current_value(rv, ap, "palette", "None"), "\n")
+		cat("  Current stored value:", get_current_value(rv, plot_index, "palette", "None"), "\n")
 		
-		ensure_edits(rv, ap, grid = FALSE)
-		rv$edits[[ap]]$palette <- input$ui_palette
+		load_plot_settings(rv, plot_index)
+		rv$edits[[as.character(plot_index)]]$palette <- input$ui_palette
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	# Revert colors to original
 	observeEvent(input$ui_revert_colors, {
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]]) || identical(ap,"Grid")) return()
-		ensure_edits(rv, ap, grid = FALSE)
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
 		
 		cat("\n=== REVERTING COLORS TO ORIGINAL ===\n")
-		cat("  Plot:", ap, "\n")
+		cat("  Plot:", plot_index, "\n")
+		
+		# Load settings for this plot if needed
+		load_plot_settings(rv, plot_index)
+		index_str <- as.character(plot_index)
 		
 		# Revert discrete colors
-		if (!is.null(rv$originals[[ap]]$colour_levels_cols)) {
-			rv$edits[[ap]]$colour_levels_cols <- rv$originals[[ap]]$colour_levels_cols
+		if (!is.null(rv$originals[[index_str]]$colour_levels_cols)) {
+			rv$edits[[index_str]]$colour_levels_cols <- rv$originals[[index_str]]$colour_levels_cols
 			cat("  Reverted colour_levels_cols\n")
 		}
-		if (!is.null(rv$originals[[ap]]$fill_levels_cols)) {
-			rv$edits[[ap]]$fill_levels_cols <- rv$originals[[ap]]$fill_levels_cols
+		if (!is.null(rv$originals[[index_str]]$fill_levels_cols)) {
+			rv$edits[[index_str]]$fill_levels_cols <- rv$originals[[index_str]]$fill_levels_cols
 			cat("  Reverted fill_levels_cols\n")
 		}
 		
 		# Revert continuous palettes
-		if (!is.null(rv$originals[[ap]]$continuous_colour_palette)) {
-			rv$edits[[ap]]$continuous_colour_palette <- rv$originals[[ap]]$continuous_colour_palette
-			cat("  Reverted continuous_colour_palette to:", rv$originals[[ap]]$continuous_colour_palette, "\n")
+		if (!is.null(rv$originals[[index_str]]$continuous_colour_palette)) {
+			rv$edits[[index_str]]$continuous_colour_palette <- rv$originals[[index_str]]$continuous_colour_palette
+			cat("  Reverted continuous_colour_palette to:", rv$originals[[index_str]]$continuous_colour_palette, "\n")
 		}
-		if (!is.null(rv$originals[[ap]]$continuous_fill_palette)) {
-			rv$edits[[ap]]$continuous_fill_palette <- rv$originals[[ap]]$continuous_fill_palette
-			cat("  Reverted continuous_fill_palette to:", rv$originals[[ap]]$continuous_fill_palette, "\n")
+		if (!is.null(rv$originals[[index_str]]$continuous_fill_palette)) {
+			rv$edits[[index_str]]$continuous_fill_palette <- rv$originals[[index_str]]$continuous_fill_palette
+			cat("  Reverted continuous_fill_palette to:", rv$originals[[index_str]]$continuous_fill_palette, "\n")
 		}
 		
 		# Reset discrete palette
-		rv$edits[[ap]]$palette <- "None"
+		rv$edits[[index_str]]$palette <- "None"
 		cat("  Reset discrete palette to None\n")
 	}, ignoreInit = TRUE)
 	
 	# General revert to original for all theme settings
 	observeEvent(input$ui_revert_all_theme, {
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
-		ensure_edits(rv, ap, grid = FALSE)
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		# Load settings for this plot if needed
+		load_plot_settings(rv, plot_index)
+		index_str <- as.character(plot_index)
 		
 		# Revert all theme settings to original
-		if (!is.null(rv$originals[[ap]])) {
-			rv$edits[[ap]] <- rv$originals[[ap]]
+		if (!is.null(rv$originals[[index_str]])) {
+			rv$edits[[index_str]] <- rv$originals[[index_str]]
 		}
 		
 		showNotification("All theme settings reverted to original", type = "message")
 	}, ignoreInit = TRUE)
 	
 	observeEvent(input$ui_apply_palette_levels, {
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
-		ensure_edits(rv, ap, grid = FALSE)
-		pal <- rv$edits[[ap]]$palette %||% "None"
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		# Load settings for this plot if needed
+		load_plot_settings(rv, plot_index)
+		index_str <- as.character(plot_index)
+		
+		pal <- rv$edits[[index_str]]$palette %||% "None"
 		
 		# Get current levels from the plot
-		e <- rv$edits[[ap]]
+		e <- rv$edits[[index_str]]
 		colour_lvls <- e$colour_levels %||% character(0)
 		fill_lvls <- e$fill_levels %||% character(0)
 		
@@ -374,7 +423,7 @@ register_theme_observers <- function(input, rv, session) {
 			} else {
 				grDevices::rainbow(length(colour_lvls))
 			}
-			rv$edits[[ap]]$colour_levels_cols <- cols
+			rv$edits[[index_str]]$colour_levels_cols <- cols
 		}
 		
 		# Generate colors for existing fill levels
@@ -384,7 +433,7 @@ register_theme_observers <- function(input, rv, session) {
 			} else {
 				grDevices::rainbow(length(fill_lvls))
 			}
-			rv$edits[[ap]]$fill_levels_cols <- cols
+			rv$edits[[index_str]]$fill_levels_cols <- cols
 		}
 		
 		showNotification("Palette applied to existing levels", type = "message")
@@ -392,12 +441,14 @@ register_theme_observers <- function(input, rv, session) {
 	
 	# Dynamic level color pickers - simple approach that only updates on valid changes
 	observe({
-		ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
 		
 		# Check if we're in the middle of a UI update (switching plots)
 		if (rv$is_hydrating) return()
 		
-		e <- rv$edits[[ap]]
+		index_str <- as.character(plot_index)
+		e <- rv$edits[[index_str]]
 		
 		# Simple observers that only update when there's a valid new color
 		if (!is.null(e$colour_levels) && length(e$colour_levels)) {
@@ -408,7 +459,7 @@ register_theme_observers <- function(input, rv, session) {
 					# Only update if we have a valid color and it's different from current
 					if (!is.null(new_color) && nzchar(new_color) && 
 						(is.null(e$colour_levels_cols[i]) || e$colour_levels_cols[i] != new_color)) {
-						rv$edits[[ap]]$colour_levels_cols[i] <- new_color
+						rv$edits[[index_str]]$colour_levels_cols[i] <- new_color
 					}
 				}, ignoreInit = TRUE, ignoreNULL = TRUE)
 			})
@@ -422,7 +473,7 @@ register_theme_observers <- function(input, rv, session) {
 					# Only update if we have a valid color and it's different from current
 					if (!is.null(new_color) && nzchar(new_color) && 
 						(is.null(e$fill_levels_cols[i]) || e$fill_levels_cols[i] != new_color)) {
-						rv$edits[[ap]]$fill_levels_cols[i] <- new_color
+						rv$edits[[index_str]]$fill_levels_cols[i] <- new_color
 					}
 				}, ignoreInit = TRUE, ignoreNULL = TRUE)
 			})
