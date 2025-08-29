@@ -57,9 +57,9 @@ originals_grid_tab <- function(rv, plot_name) {
     h5("Grid Settings"),
     fluidRow(
       column(6, strong("Grid Major:"), br(), 
-             ifelse(isTRUE(originals$grid_major), "ON", "OFF")),
+             ifelse(isTRUE(originals$grid_major), "ON", "Not set")),
       column(6, strong("Grid Minor:"), br(), 
-             ifelse(isTRUE(originals$grid_minor), "ON", "OFF"))
+             ifelse(isTRUE(originals$grid_minor), "ON", "Not set"))
     ),
     tags$hr(),
     fluidRow(
@@ -233,7 +233,7 @@ originals_theme_tab <- function(rv, plot_name) {
       column(6, strong("Legend Position:"), br(), 
              originals$legend_pos %||% "Not set"),
       column(6, strong("Legend Box:"), br(), 
-             ifelse(isTRUE(originals$legend_box), "ON", "OFF"))
+             ifelse(isTRUE(originals$legend_box), "ON", "Not set"))
     ),
     tags$hr(),
     h5("Colors"),

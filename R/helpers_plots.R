@@ -355,33 +355,95 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 		if (is.null(v)) "" else as.character(v)
 	}
 	
-	# Extract axis limits and suggested steps
+	# Extract axis limits and calculated steps
 	x_info <- list(min = NULL, max = NULL, step_major = NULL, step_minor = NULL)
 	y_info <- list(min = NULL, max = NULL, step_major = NULL, step_minor = NULL)
 	
-	# Extract axis limits and suggest steps
+	# Extract axis limits and calculated steps from ggplot_build
 	if (requireNamespace("scales", quietly = TRUE)) {
 		tryCatch({
 			built <- ggplot2::ggplot_build(plot_obj)
+			
+			# Extract x-axis information
 			if (!is.null(built$layout$panel_scales_x) && length(built$layout$panel_scales_x) > 0) {
-				sx <- built$layout$panel_scales_x[[1]]$range$range
+				scale_x <- built$layout$panel_scales_x[[1]]
+				sx <- scale_x$range$range
 				if (length(sx) >= 2) {
-					x_info$min <- sx[1]; x_info$max <- sx[2]
+					x_info$min <- sx[1]
+					x_info$max <- sx[2]
+					
+					# Try to extract calculated steps from ggplot
+					if (!is.null(scale_x$get_breaks)) {
+						breaks <- scale_x$get_breaks()
+						if (length(breaks) > 1) {
+							x_info$step_major <- breaks[2] - breaks[1]
+						}
+					}
+					
+					# Try to extract minor breaks if available
+					if (!is.null(scale_x$get_breaks_minor)) {
+						minor_breaks <- scale_x$get_breaks_minor()
+						if (length(minor_breaks) > 1) {
+							x_info$step_minor <- minor_breaks[2] - minor_breaks[1]
+						}
+					}
 				}
 			}
+			
+			# Extract y-axis information
 			if (!is.null(built$layout$panel_scales_y) && length(built$layout$panel_scales_y) > 0) {
-				sy <- built$layout$panel_scales_y[[1]]$range$range
+				scale_y <- built$layout$panel_scales_y[[1]]
+				sy <- scale_y$range$range
 				if (length(sy) >= 2) {
-					y_info$min <- sy[1]; y_info$max <- sy[2]
+					y_info$min <- sy[1]
+					y_info$max <- sy[2]
+					
+					# Try to extract calculated steps from ggplot
+					if (!is.null(scale_y$get_breaks)) {
+						breaks <- scale_y$get_breaks()
+						if (length(breaks) > 1) {
+							y_info$step_major <- breaks[2] - breaks[1]
+						}
+					}
+					
+					# Try to extract minor breaks if available
+					if (!is.null(scale_y$get_breaks_minor)) {
+						minor_breaks <- scale_y$get_breaks_minor()
+						if (length(minor_breaks) > 1) {
+							y_info$step_minor <- minor_breaks[2] - minor_breaks[1]
+						}
+					}
 				}
 			}
 		}, error = function(e) NULL)
 	}
 	
-	# Theme-derived defaults
-	maj_el <- get_theme_elem("panel.grid.major")
-	min_el <- get_theme_elem("panel.grid.minor")
-	lbox   <- get_theme_elem("legend.box.background")
+	# Extract theme settings (only if explicitly set)
+	extract_theme_size <- function(elem) {
+		theme_elem <- get_theme_elem(elem)
+		if (!is.null(theme_elem) && !is_blank(theme_elem) && !is.null(theme_elem$size)) {
+			return(theme_elem$size)
+		}
+		return(NULL)
+	}
+	
+	# Extract grid settings (only if explicitly set)
+	extract_grid_setting <- function(elem) {
+		theme_elem <- get_theme_elem(elem)
+		if (!is.null(theme_elem) && !is_blank(theme_elem)) {
+			return(TRUE)
+		}
+		return(NULL)
+	}
+	
+	# Extract grid linetype (only if explicitly set)
+	extract_grid_linetype <- function(elem) {
+		theme_elem <- get_theme_elem(elem)
+		if (!is.null(theme_elem) && !is_blank(theme_elem) && !is.null(theme_elem$linetype)) {
+			return(theme_elem$linetype)
+		}
+		return(NULL)
+	}
 	
 	# Helper function to extract levels from plot
 	extract_levels_from_plot <- function(p, aes_name) {
@@ -521,43 +583,43 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 		list(levels = character(0), colors = character(0))
 	}
 	
-	# Store ALL original values
-	rv$originals[[index_str]] <- list(
-		# Labels
+	# Store only extracted values (no hardcoded defaults)
+	extracted_settings <- list(
+		# Labels (always extract if present)
 		title      = get_lab("title"),
 		subtitle   = get_lab("subtitle"),
 		caption    = get_lab("caption"),
 		xlab       = get_lab("x"),
 		ylab       = get_lab("y"),
 		
-		# Theme - use BASE defaults for essential settings
-		theme      = BASE$theme,
-		base_size  = BASE$base_size,
-		legend_pos = BASE$legend_pos,
-		legend_box = if (!is.null(lbox)) !is_blank(lbox) else NULL,
-		panel_bg   = NULL,  # Optional setting
-		plot_bg    = NULL,  # Optional setting
+		# Theme settings (only if explicitly set)
+		theme      = NULL,  # Let ggplot handle default
+		base_size  = extract_theme_size("text"),
+		legend_pos = NULL,  # Let ggplot handle default
+		legend_box = if (!is.null(get_theme_elem("legend.box.background"))) !is_blank(get_theme_elem("legend.box.background")) else NULL,
+		panel_bg   = NULL,  # Let ggplot handle default
+		plot_bg    = NULL,  # Let ggplot handle default
 		
-		# Grid - use BASE defaults for essential settings
-		grid_major = if (!is.null(maj_el)) !is_blank(maj_el) else FALSE,
-		grid_minor = if (!is.null(min_el)) !is_blank(min_el) else FALSE,
-		grid_major_linetype = if (!is.null(maj_el)) tryCatch(maj_el$linetype, error = function(...) "solid") else "solid",
-		grid_minor_linetype = if (!is.null(min_el)) tryCatch(min_el$linetype, error = function(...) "dashed") else "dashed",
-		grid_color = NULL,  # Optional setting
+		# Grid settings (only if explicitly set)
+		grid_major = extract_grid_setting("panel.grid.major"),
+		grid_minor = extract_grid_setting("panel.grid.minor"),
+		grid_major_linetype = extract_grid_linetype("panel.grid.major"),
+		grid_minor_linetype = extract_grid_linetype("panel.grid.minor"),
+		grid_color = NULL,  # Let ggplot handle default
 		
-		# Axis limits - only set if actually present in plot
+		# Axis limits (only if present in plot)
 		x_min      = x_info$min,
 		x_max      = x_info$max,
 		y_min      = y_info$min,
 		y_max      = y_info$max,
 		
-		# Step suggestions - use BASE defaults if not present in plot
-		x_step_major = x_info$step_major %||% 1,
-		x_step_minor = x_info$step_minor %||% 0.5,
-		y_step_major = y_info$step_major %||% 1,
-		y_step_minor = y_info$step_minor %||% 0.5,
+		# Steps (only if ggplot calculated them)
+		x_step_major = x_info$step_major,
+		x_step_minor = x_info$step_minor,
+		y_step_major = y_info$step_major,
+		y_step_minor = y_info$step_minor,
 		
-		# Colors - include extracted results
+		# Colors (extracted results)
 		palette = "None",
 		continuous_colour_palette = continuous_colour_palette,
 		continuous_fill_palette = continuous_fill_palette,
@@ -566,15 +628,21 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 		fill_levels = fill_result$levels,
 		fill_levels_cols = fill_result$colors,
 		
-		# Text sizes - use BASE defaults for essential settings
-		title_size = BASE$title_size,
-		subtitle_size = BASE$subtitle_size,
-		caption_size = BASE$caption_size,
-		axis_title_size = BASE$axis_title_size,
-		axis_text_size = BASE$axis_text_size,
-		legend_title_size = BASE$legend_title_size,
-		legend_text_size = BASE$legend_text_size
+		# Text sizes (only if explicitly set in theme)
+		title_size = extract_theme_size("plot.title"),
+		subtitle_size = extract_theme_size("plot.subtitle"),
+		caption_size = extract_theme_size("plot.caption"),
+		axis_title_size = extract_theme_size("axis.title"),
+		axis_text_size = extract_theme_size("axis.text"),
+		legend_title_size = extract_theme_size("legend.title"),
+		legend_text_size = extract_theme_size("legend.text")
 	)
+	
+	# Remove NULL values (ggplot will handle these automatically)
+	extracted_settings <- Filter(Negate(is.null), extracted_settings)
+	
+	# Store only what we extracted
+	rv$originals[[index_str]] <- extracted_settings
 }
 
 # Get plot name for display

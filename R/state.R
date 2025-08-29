@@ -71,6 +71,14 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
         rv$edits[[index_str]][[setting_name]] <- orig_settings[[setting_name]]
       }
     }
+    
+    # Initialize app-level settings with BASE defaults
+    app_settings <- c("width_mm", "height_mm", "dpi", "format")
+    for (setting in app_settings) {
+      if (is.null(rv$edits[[index_str]][[setting]])) {
+        rv$edits[[index_str]][[setting]] <- BASE[[setting]]
+      }
+    }
   }
   
   # Initialize originals if they don't exist
@@ -89,7 +97,7 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
   }
 }
 
-# Get current value for a setting, with fallback to original and then default
+# Get current value for a setting, with smart fallback logic
 get_current_value <- function(rv, plot_name, setting, default = NULL) {
   if (is.null(plot_name) || is.null(rv$plots[[plot_name]])) return(default)
   
@@ -98,18 +106,66 @@ get_current_value <- function(rv, plot_name, setting, default = NULL) {
   
   index_str <- as.character(plot_index)
   
-  # Check edits first
+  # 1. Check edits first (user modifications)
   if (!is.null(rv$edits[[index_str]]) && !is.null(rv$edits[[index_str]][[setting]])) {
     return(rv$edits[[index_str]][[setting]])
   }
   
-  # Check originals next
+  # 2. Check originals (extracted from plot)
   if (!is.null(rv$originals[[index_str]]) && !is.null(rv$originals[[index_str]][[setting]])) {
     return(rv$originals[[index_str]][[setting]])
   }
   
-  # Return default
-  return(default)
+  # 3. Check if ggplot handles this automatically
+  if (is_ggplot_auto_handled(setting)) {
+    return(NULL)  # Let ggplot handle it
+  }
+  
+  # 4. Use BASE default only for app-level settings
+  if (is_app_level_setting(setting)) {
+    return(BASE[[setting]])
+  }
+  
+  # 5. Return NULL (no value available)
+  return(NULL)
+}
+
+# Helper function to determine if ggplot handles a setting automatically
+is_ggplot_auto_handled <- function(setting) {
+  auto_handled <- c(
+    # Steps - ggplot calculates these automatically
+    "x_step_major", "x_step_minor", "y_step_major", "y_step_minor",
+    
+    # Grid details - ggplot has sensible defaults
+    "grid_major_linetype", "grid_minor_linetype", "grid_color",
+    
+    # Theme details - ggplot has sensible defaults
+    "panel_bg", "plot_bg", "legend_box",
+    
+    # Colors - ggplot has default palettes
+    "palette",
+    
+    # Theme choice - ggplot has default theme
+    "theme", "legend_pos"
+  )
+  
+  setting %in% auto_handled
+}
+
+# Helper function to determine if a setting is app-level (should use BASE)
+is_app_level_setting <- function(setting) {
+  app_level <- c(
+    # Export settings
+    "width_mm", "height_mm", "dpi", "format",
+    
+    # Grid layout settings
+    "grid_rows", "grid_cols", "grid_collect", "grid_legend_pos",
+    
+    # App-wide defaults
+    "base_size"
+  )
+  
+  setting %in% app_level
 }
 
 # Resize grid cells
