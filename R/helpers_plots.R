@@ -422,6 +422,7 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 	extract_theme_size <- function(elem) {
 		theme_elem <- get_theme_elem(elem)
 		if (!is.null(theme_elem) && !is_blank(theme_elem) && !is.null(theme_elem$size)) {
+			# Return the relative size multiplier (e.g., 1.2 means 1.2 * base_size)
 			return(theme_elem$size)
 		}
 		return(NULL)
@@ -430,19 +431,27 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 	# Extract grid settings (only if explicitly set)
 	extract_grid_setting <- function(elem) {
 		theme_elem <- get_theme_elem(elem)
+		# Only return TRUE if the element is explicitly set to TRUE
+		# Return NULL if it's not set (let ggplot handle default)
 		if (!is.null(theme_elem) && !is_blank(theme_elem)) {
-			return(TRUE)
+			# Check if it's explicitly set to TRUE (not just not-blank)
+			if (identical(theme_elem, ggplot2::element_line())) {
+				return(TRUE)  # Explicitly enabled
+			} else if (is.null(theme_elem$colour) && is.null(theme_elem$linetype) && is.null(theme_elem$size)) {
+				return(TRUE)  # Explicitly enabled with defaults
+			}
 		}
-		return(NULL)
+		return(NULL)  # Not explicitly set, let ggplot handle
 	}
 	
 	# Extract grid linetype (only if explicitly set)
 	extract_grid_linetype <- function(elem) {
 		theme_elem <- get_theme_elem(elem)
+		# Only return linetype if it's explicitly set
 		if (!is.null(theme_elem) && !is_blank(theme_elem) && !is.null(theme_elem$linetype)) {
 			return(theme_elem$linetype)
 		}
-		return(NULL)
+		return(NULL)  # Let ggplot use default
 	}
 	
 	# Helper function to extract levels from plot

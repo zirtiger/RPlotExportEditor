@@ -65,6 +65,7 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
     rv$edits[[index_str]] <- list()
     
     # Copy originals to edits so they appear in the UI
+    # This preserves NULL values (ggplot handles these automatically)
     orig_settings <- rv$originals[[index_str]]
     if (!is.null(orig_settings)) {
       for (setting_name in names(orig_settings)) {
@@ -72,7 +73,8 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
       }
     }
     
-    # Initialize app-level settings with BASE defaults
+    # Initialize ONLY app-level settings with BASE defaults
+    # These are settings that cannot be extracted from plots
     app_settings <- c("width_mm", "height_mm", "dpi", "format")
     for (setting in app_settings) {
       if (is.null(rv$edits[[index_str]][[setting]])) {
@@ -128,6 +130,19 @@ get_current_value <- function(rv, plot_name, setting, default = NULL) {
   
   # 5. Return NULL (no value available)
   return(NULL)
+}
+
+# Get display value for UI (handles NULL values appropriately)
+get_display_value <- function(rv, plot_name, setting, default = NULL) {
+  value <- get_current_value(rv, plot_name, setting, default)
+  
+  # For UI display, we want to show the actual value
+  # NULL means "not set, ggplot handles it"
+  # FALSE means "explicitly disabled"
+  # TRUE means "explicitly enabled"
+  # Numeric/text means "actual value"
+  
+  return(value)
 }
 
 # Helper function to determine if ggplot handles a setting automatically
