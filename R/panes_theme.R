@@ -231,6 +231,7 @@ register_theme_observers <- function(input, rv, session) {
 	
 	observeEvent(input$ui_theme, {
 		if (rv$is_hydrating) return()
+		if (rv$switching_plots) return()  # Prevent updates during plot switching
 		plot_index <- get_plot_index()
 		if (is.null(plot_index)) return()
 		
@@ -242,6 +243,7 @@ register_theme_observers <- function(input, rv, session) {
 	
 	observeEvent(input$ui_legend_pos, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
+		if (rv$switching_plots) return()  # Prevent updates during plot switching
 		plot_index <- get_plot_index()
 		if (is.null(plot_index)) return()
 		
@@ -328,6 +330,7 @@ register_theme_observers <- function(input, rv, session) {
 	# Colors tab
 	observeEvent(input$ui_palette, {
 		if (rv$is_hydrating) return()
+		if (rv$switching_plots) return()  # Prevent updates during plot switching
 		plot_index <- get_plot_index()
 		if (is.null(plot_index)) return()
 		

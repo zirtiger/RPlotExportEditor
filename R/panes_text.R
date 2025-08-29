@@ -170,6 +170,7 @@ register_text_observers <- function(input, rv, session) {
     # Use onBlur to only update when focus is lost
     observeEvent(input[[input_id]], {
       if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+      if (rv$switching_plots) return()  # Prevent updates during plot switching
       ap <- rv$active_tab
       if (is.null(ap) || identical(ap, "Grid")) return()
       
@@ -190,6 +191,7 @@ register_text_observers <- function(input, rv, session) {
   
   # Persist selected sub-tab
   observeEvent(input$text_tabs, {
+    if (rv$switching_plots) return()  # Prevent updates during plot switching
     rv$tabs$text <- input$text_tabs
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
@@ -225,6 +227,7 @@ register_text_observers <- function(input, rv, session) {
   bind_edit("ui_y_step_major", "y_step_major")
   
   observeEvent(input$apply_all_text, {
+    if (rv$switching_plots) return()  # Prevent updates during plot switching
     ap <- rv$active_tab
     if (is.null(ap) || identical(ap, "Grid")) return()
     
