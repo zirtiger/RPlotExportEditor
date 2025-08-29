@@ -89,14 +89,17 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
   } else {
     # Edits already exist, but ensure base_size is correct for this plot
     # This prevents accumulation when switching between plots
+    cat("DEBUG: ensure_edits - edits exist for plot", plot_name, "index_str:", index_str, "\n")
+    cat("DEBUG: ensure_edits - checking originals for base_size\n")
+    
     if (!is.null(rv$originals[[index_str]]) && !is.null(rv$originals[[index_str]]$base_size)) {
       # Use the original plot's base_size
+      cat("DEBUG: ensure_edits - setting base_size to original value:", rv$originals[[index_str]]$base_size, "\n")
       rv$edits[[index_str]]$base_size <- rv$originals[[index_str]]$base_size
-
     } else {
       # Use BASE default if no original base_size
+      cat("DEBUG: ensure_edits - setting base_size to BASE default:", BASE$base_size, "\n")
       rv$edits[[index_str]]$base_size <- BASE$base_size
-
     }
     
 
