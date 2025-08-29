@@ -448,14 +448,16 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 	}
 	
 	# Extract base size from plot theme
-	extract_base_size <- function(plot_obj) {
-		# Try to get base_size from the plot's theme
-		if (!is.null(plot_obj$theme) && !is.null(plot_obj$theme$text) && !is.null(plot_obj$theme$text$size)) {
-			return(plot_obj$theme$text$size)
-		}
-		# If no base_size in theme, return NULL (will use BASE$base_size as default)
-		return(NULL)
+extract_base_size <- function(plot_obj) {
+	# Try to get base_size from the plot's theme
+	if (!is.null(plot_obj$theme) && !is.null(plot_obj$theme$text) && !is.null(plot_obj$theme$text$size)) {
+		cat("DEBUG: extract_base_size found theme$text$size:", plot_obj$theme$text$size, "\n")
+		return(plot_obj$theme$text$size)
 	}
+	# If no base_size in theme, return NULL (will use BASE$base_size as default)
+	cat("DEBUG: extract_base_size returning NULL, using BASE$base_size:", BASE$base_size, "\n")
+	return(NULL)
+}
 	
 	# Extract theme settings (only if explicitly set)
 	extract_theme_size <- function(elem, plot_obj) {
@@ -463,6 +465,7 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 		if (!is.null(theme_elem) && !is_blank(theme_elem) && !is.null(theme_elem$size)) {
 			# Extract the base_size from the plot to calculate relative multiplier
 			plot_base_size <- extract_base_size(plot_obj) %||% BASE$base_size
+			cat("DEBUG: extract_theme_size for", elem, ":", theme_elem$size, "/", plot_base_size, "=", theme_elem$size / plot_base_size, "\n")
 			if (!is.null(plot_base_size) && plot_base_size > 0) {
 				# Convert absolute size to relative multiplier
 				relative_size <- theme_elem$size / plot_base_size
