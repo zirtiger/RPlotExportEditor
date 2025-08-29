@@ -53,12 +53,16 @@ init_reactive_state <- function() {
 
 # Ensure edits exist for a plot
 ensure_edits <- function(rv, plot_name, grid = FALSE) {
+  cat("DEBUG: ensure_edits called with plot_name:", plot_name, "\n")
+  cat("DEBUG: names(rv$plots):", paste(names(rv$plots), collapse=", "), "\n")
+  
   if (is.null(plot_name) || is.null(rv$plots[[plot_name]])) return()
   
   plot_index <- which(names(rv$plots) == plot_name)
   if (length(plot_index) == 0) return()
   
   index_str <- as.character(plot_index)
+  cat("DEBUG: plot_index:", plot_index, "index_str:", index_str, "\n")
   
   # Initialize edits if they don't exist
   if (is.null(rv$edits[[index_str]]) || length(rv$edits[[index_str]]) == 0) {
@@ -85,6 +89,7 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
     # Handle base_size separately - use extracted value if available, otherwise BASE default
     if (is.null(rv$edits[[index_str]]$base_size)) {
       rv$edits[[index_str]]$base_size <- rv$originals[[index_str]]$base_size %||% BASE$base_size
+      cat("DEBUG: Setting base_size for plot", plot_name, "to", rv$edits[[index_str]]$base_size, "\n")
     }
   } else {
     # Edits already exist, but ensure base_size is correct for this plot
@@ -92,9 +97,11 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
     if (!is.null(rv$originals[[index_str]]) && !is.null(rv$originals[[index_str]]$base_size)) {
       # Use the original plot's base_size
       rv$edits[[index_str]]$base_size <- rv$originals[[index_str]]$base_size
+      cat("DEBUG: Updating base_size for plot", plot_name, "to original value", rv$edits[[index_str]]$base_size, "\n")
     } else {
       # Use BASE default if no original base_size
       rv$edits[[index_str]]$base_size <- BASE$base_size
+      cat("DEBUG: Updating base_size for plot", plot_name, "to BASE default", rv$edits[[index_str]]$base_size, "\n")
     }
     
 

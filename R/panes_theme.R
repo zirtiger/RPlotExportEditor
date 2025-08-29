@@ -189,7 +189,7 @@ theme_pane_ui <- function(rv) {
 								tagList(
 									div(style="margin-bottom:4px;",
 										tags$span(colour_lvls[i], style="font-weight:bold; margin-right:8px;"),
-										uiOutput(paste0("ui_colour_", i))
+										make_color_input(paste0("ui_colour_", i), "", get_val(paste0("colour_levels_cols"), character(0))[i])
 									)
 								)
 							})
@@ -200,7 +200,7 @@ theme_pane_ui <- function(rv) {
 								tagList(
 									div(style="margin-bottom:4px;",
 										tags$span(fill_lvls[i], style="font-weight:bold; margin-right:8px;"),
-										uiOutput(paste0("ui_fill_", i))
+										make_color_input(paste0("ui_fill_", i), "", get_val(paste0("fill_levels_cols"), character(0))[i])
 									)
 								)
 							})
@@ -214,7 +214,7 @@ theme_pane_ui <- function(rv) {
 	)
 }
 
-register_theme_observers <- function(input, output, rv, session) {
+register_theme_observers <- function(input, rv, session) {
 	# Helper function to get plot index from active tab
 	get_plot_index <- function() {
 		ap <- rv$active_tab
@@ -475,53 +475,7 @@ register_theme_observers <- function(input, output, rv, session) {
 		}
 	})
 	
-	# Render reactive color inputs for colour levels
-	observe({
-		plot_index <- get_plot_index()
-		if (is.null(plot_index)) return()
-		
-		index_str <- as.character(plot_index)
-		e <- rv$edits[[index_str]]
-		
-		if (!is.null(e$colour_levels) && length(e$colour_levels)) {
-			lapply(seq_along(e$colour_levels), function(i) {
-				output_id <- paste0("ui_colour_", i)
-				current_color <- e$colour_levels_cols[i] %||% "#1f77b4"
-				
-				output[[output_id]] <- renderUI({
-					if (requireNamespace("colourpicker", quietly = TRUE)) {
-						colourpicker::colourInput(output_id, "", value = current_color, allowTransparent = TRUE)
-					} else {
-						textInput(output_id, "", value = current_color, placeholder = "#RRGGBB or name")
-					}
-				})
-			})
-		}
-	})
-	
-	# Render reactive color inputs for fill levels
-	observe({
-		plot_index <- get_plot_index()
-		if (is.null(plot_index)) return()
-		
-		index_str <- as.character(plot_index)
-		e <- rv$edits[[index_str]]
-		
-		if (!is.null(e$fill_levels) && length(e$fill_levels)) {
-			lapply(seq_along(e$fill_levels), function(i) {
-				output_id <- paste0("ui_fill_", i)
-				current_color <- e$fill_levels_cols[i] %||% "#1f77b4"
-				
-				output[[output_id]] <- renderUI({
-					if (requireNamespace("colourpicker", quietly = TRUE)) {
-						colourpicker::colourInput(output_id, "", value = current_color, allowTransparent = TRUE)
-					} else {
-						textInput(output_id, "", value = current_color, placeholder = "#RRGGBB or name")
-					}
-				})
-			})
-		}
-	})
+
 	
 	# Continuous color palette observers
 	observeEvent(input$ui_continuous_colour_palette, {
