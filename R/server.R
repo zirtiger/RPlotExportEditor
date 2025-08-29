@@ -108,10 +108,12 @@ app_server <- function(input, output, session) {
     demo_plots <- list(
       Demo1 = ggplot(mtcars, aes(wt, mpg, color = factor(cyl))) +
         geom_point(size = 3) + theme_minimal(base_size = BASE$base_size) +
+        scale_color_manual(values = c("red", "green", "blue")) +
         labs(title = "Fuel efficiency vs weight", subtitle = "Demo 1",
              x = "Weight (1000 lbs)", y = "MPG", color = "Cyl", caption = "mtcars"),
       Demo2 = ggplot(iris, aes(Sepal.Length, Sepal.Width, color = Species)) +
         geom_point(size = 2.5) + theme_bw(base_size = BASE$base_size) +
+        scale_color_manual(values = c("yellow", "orange", "purple")) +
         labs(title = "Iris sepal", subtitle = "Demo 2", x = "Sepal L", y = "Sepal W", color = "Species"),
       Demo3 = ggplot(mpg, aes(displ, hwy, color = class)) +
         geom_point(alpha = 0.8) + theme_light(base_size = BASE$base_size) +
