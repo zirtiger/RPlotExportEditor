@@ -82,9 +82,6 @@ app_server <- function(input, output, session) {
         ensure_edits(rv, rv$active_tab, grid = FALSE)
       }
       
-      # Force UI update to refresh all inputs with new plot's settings
-      rv$force_ui_update <- rv$force_ui_update + 1
-      
       # If this is the first time switching to a plot (no last_mainmenu set),
       # default to "text" instead of staying on "grid"
       target_menu <- if (is.null(rv$last_mainmenu) || rv$last_mainmenu == "grid") "text" else rv$last_mainmenu

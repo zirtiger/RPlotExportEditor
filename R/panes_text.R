@@ -48,7 +48,7 @@ text_pane_ui <- function(rv) {
         textInput("ui_ylab",     "Y label",  ylab_now)
       ),
       tabPanel("Text Sizes",
-        # Base size control
+        # Base size control (alone at top)
         sliderInput("ui_base_size", "Base text size", 
                    value = e$base_size %||% 12, 
                    min = 8, max = 24, step = 1),
@@ -56,51 +56,86 @@ text_pane_ui <- function(rv) {
         # Row 1: Title and Subtitle
         fluidRow(
           column(6,
-            sliderInput("ui_title_size", "Title size", 
-                       value = e$title_size %||% 14, 
-                       min = 8, max = 34, step = 1)
+            div(
+              sliderInput("ui_title_size", "Title multiplier", 
+                         value = e$title_size %||% 1.2, 
+                         min = 0.5, max = 3.0, step = 0.1),
+              tags$small(style="color:#777;", 
+                         "Size: ", 
+                         round((e$title_size %||% 1.2) * (e$base_size %||% 12), 1))
+            )
           ),
           column(6,
-            sliderInput("ui_subtitle_size", "Subtitle size", 
-                       value = e$subtitle_size %||% 12, 
-                       min = 6, max = 30, step = 1)
+            div(
+              sliderInput("ui_subtitle_size", "Subtitle multiplier", 
+                         value = e$subtitle_size %||% 1.0, 
+                         min = 0.5, max = 2.5, step = 0.1),
+              tags$small(style="color:#777;", 
+                         "Size: ", 
+                         round((e$subtitle_size %||% 1.0) * (e$base_size %||% 12), 1))
+            )
           )
         ),
         
-        # Row 2: Caption and Axis Title
+        # Row 2: Axis texts
         fluidRow(
           column(6,
-            sliderInput("ui_caption_size", "Caption size", 
-                       value = e$caption_size %||% 10, 
-                       min = 6, max = 28, step = 1)
+            div(
+              sliderInput("ui_axis_title_size", "Axis title multiplier", 
+                         value = e$axis_title_size %||% 1.0, 
+                         min = 0.5, max = 2.5, step = 0.1),
+              tags$small(style="color:#777;", 
+                         "Size: ", 
+                         round((e$axis_title_size %||% 1.0) * (e$base_size %||% 12), 1))
+            )
           ),
           column(6,
-            sliderInput("ui_axis_title_size", "Axis title size", 
-                       value = e$axis_title_size %||% 12, 
-                       min = 8, max = 30, step = 1)
+            div(
+              sliderInput("ui_axis_text_size", "Axis text multiplier", 
+                         value = e$axis_text_size %||% 0.8, 
+                         min = 0.5, max = 2.0, step = 0.1),
+              tags$small(style="color:#777;", 
+                         "Size: ", 
+                         round((e$axis_text_size %||% 0.8) * (e$base_size %||% 12), 1))
+            )
           )
         ),
         
-        # Row 3: Axis Text and Legend Title
+        # Row 3: Legends
         fluidRow(
           column(6,
-            sliderInput("ui_axis_text_size", "Axis text size", 
-                       value = e$axis_text_size %||% 10, 
-                       min = 6, max = 28, step = 1)
+            div(
+              sliderInput("ui_legend_title_size", "Legend title multiplier", 
+                         value = e$legend_title_size %||% 1.0, 
+                         min = 0.5, max = 2.5, step = 0.1),
+              tags$small(style="color:#777;", 
+                         "Size: ", 
+                         round((e$legend_title_size %||% 1.0) * (e$base_size %||% 12), 1))
+            )
           ),
           column(6,
-            sliderInput("ui_legend_title_size", "Legend title size", 
-                       value = e$legend_title_size %||% 12, 
-                       min = 8, max = 30, step = 1)
+            div(
+              sliderInput("ui_legend_text_size", "Legend text multiplier", 
+                         value = e$legend_text_size %||% 0.8, 
+                         min = 0.5, max = 2.0, step = 0.1),
+              tags$small(style="color:#777;", 
+                         "Size: ", 
+                         round((e$legend_text_size %||% 0.8) * (e$base_size %||% 12), 1))
+            )
           )
         ),
         
-        # Row 4: Legend Text (centered)
+        # Row 4: Caption (alone, centered)
         fluidRow(
           column(6, offset = 3,
-            sliderInput("ui_legend_text_size", "Legend text size", 
-                       value = e$legend_text_size %||% 10, 
-                       min = 6, max = 28, step = 1)
+            div(
+              sliderInput("ui_caption_size", "Caption multiplier", 
+                         value = e$caption_size %||% 0.8, 
+                         min = 0.5, max = 2.0, step = 0.1),
+              tags$small(style="color:#777;", 
+                         "Size: ", 
+                         round((e$caption_size %||% 0.8) * (e$base_size %||% 12), 1))
+            )
           )
         )
       ),
@@ -135,7 +170,6 @@ register_text_observers <- function(input, rv, session) {
     # Use onBlur to only update when focus is lost
     observeEvent(input[[input_id]], {
       if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
-      if (rv$force_ui_update > 0) return()  # Skip during UI refresh
       ap <- rv$active_tab
       if (is.null(ap) || identical(ap, "Grid")) return()
       
@@ -156,7 +190,6 @@ register_text_observers <- function(input, rv, session) {
   
   # Persist selected sub-tab
   observeEvent(input$text_tabs, {
-    if (rv$force_ui_update > 0) return()  # Skip during UI refresh
     rv$tabs$text <- input$text_tabs
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
@@ -192,7 +225,6 @@ register_text_observers <- function(input, rv, session) {
   bind_edit("ui_y_step_major", "y_step_major")
   
   observeEvent(input$apply_all_text, {
-    if (rv$force_ui_update > 0) return()  # Skip during UI refresh
     ap <- rv$active_tab
     if (is.null(ap) || identical(ap, "Grid")) return()
     
