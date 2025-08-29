@@ -54,9 +54,7 @@ export_pane_ui <- function(rv) {
   
   tagList(
     actionButton("apply_all_export", "Use for all plots", class = "btn btn-sm btn-default btn-block"),
-    tags$hr(),
-    h4(sprintf("Export — %s", ap)),
-    tags$hr(),
+    		tags$hr(),
     
     # Use tabs for better organization
     tabsetPanel(

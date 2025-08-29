@@ -66,58 +66,29 @@ apply_edits <- function(p, edits) {
   }
   p <- apply_level_colors(p)
   
-  # Custom text sizes (relative to base_size)
+  # Custom text sizes
   text_theme <- ggplot2::theme()
   
-  # Helper function to calculate actual size from relative multiplier
-  get_actual_size <- function(relative_size, base_size) {
-    if (is.null(relative_size) || is.null(base_size)) return(NULL)
-    return(relative_size * base_size)
-  }
-  
-  base_size <- e$base_size %||% BASE$base_size
-  
   if (!is.null(e$title_size)) {
-    actual_size <- get_actual_size(e$title_size, base_size)
-    if (!is.null(actual_size)) {
-      text_theme <- text_theme + ggplot2::theme(plot.title = ggplot2::element_text(size = actual_size))
-    }
+    text_theme <- text_theme + ggplot2::theme(plot.title = ggplot2::element_text(size = e$title_size))
   }
   if (!is.null(e$subtitle_size)) {
-    actual_size <- get_actual_size(e$subtitle_size, base_size)
-    if (!is.null(actual_size)) {
-      text_theme <- text_theme + ggplot2::theme(plot.subtitle = ggplot2::element_text(size = actual_size))
-    }
+    text_theme <- text_theme + ggplot2::theme(plot.subtitle = ggplot2::element_text(size = e$subtitle_size))
   }
   if (!is.null(e$caption_size)) {
-    actual_size <- get_actual_size(e$caption_size, base_size)
-    if (!is.null(actual_size)) {
-      text_theme <- text_theme + ggplot2::theme(plot.caption = ggplot2::element_text(size = actual_size))
-    }
+    text_theme <- text_theme + ggplot2::theme(plot.caption = ggplot2::element_text(size = e$caption_size))
   }
   if (!is.null(e$axis_title_size)) {
-    actual_size <- get_actual_size(e$axis_title_size, base_size)
-    if (!is.null(actual_size)) {
-      text_theme <- text_theme + ggplot2::theme(axis.title = ggplot2::element_text(size = actual_size))
-    }
+    text_theme <- text_theme + ggplot2::theme(axis.title = ggplot2::element_text(size = e$axis_title_size))
   }
   if (!is.null(e$axis_text_size)) {
-    actual_size <- get_actual_size(e$axis_text_size, base_size)
-    if (!is.null(actual_size)) {
-      text_theme <- text_theme + ggplot2::theme(axis.text = ggplot2::element_text(size = actual_size))
-    }
+    text_theme <- text_theme + ggplot2::theme(axis.text = ggplot2::element_text(size = e$axis_text_size))
   }
   if (!is.null(e$legend_title_size)) {
-    actual_size <- get_actual_size(e$legend_title_size, base_size)
-    if (!is.null(actual_size)) {
-      text_theme <- text_theme + ggplot2::theme(legend.title = ggplot2::element_text(size = actual_size))
-    }
+    text_theme <- text_theme + ggplot2::theme(legend.title = ggplot2::element_text(size = e$legend_title_size))
   }
   if (!is.null(e$legend_text_size)) {
-    actual_size <- get_actual_size(e$legend_text_size, base_size)
-    if (!is.null(actual_size)) {
-      text_theme <- text_theme + ggplot2::theme(legend.text = ggplot2::element_text(size = actual_size))
-    }
+    text_theme <- text_theme + ggplot2::theme(legend.text = ggplot2::element_text(size = e$legend_text_size))
   }
   
   p <- p + text_theme
@@ -447,11 +418,21 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 		}, error = function(e) NULL)
 	}
 	
+	# Extract base size from plot theme
+	extract_base_size <- function(plot_obj) {
+		# Try to get base_size from the plot's theme
+		if (!is.null(plot_obj$theme) && !is.null(plot_obj$theme$text) && !is.null(plot_obj$theme$text$size)) {
+			return(plot_obj$theme$text$size)
+		}
+		# If no base_size in theme, return NULL (will use BASE$base_size as default)
+		return(NULL)
+	}
+	
 	# Extract theme settings (only if explicitly set)
 	extract_theme_size <- function(elem) {
 		theme_elem <- get_theme_elem(elem)
 		if (!is.null(theme_elem) && !is_blank(theme_elem) && !is.null(theme_elem$size)) {
-			# Return the relative size multiplier (e.g., 1.2 means 1.2 * base_size)
+			# Return the actual size value (not relative)
 			return(theme_elem$size)
 		}
 		return(NULL)
@@ -632,7 +613,7 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 		
 		# Theme settings (only if explicitly set)
 		theme      = NULL,  # Let ggplot handle default
-		base_size  = NULL,  # Use BASE default (not extracted from plot)
+		base_size  = extract_base_size(plot_obj),  # Extract actual base_size from plot
 		legend_pos = NULL,  # Let ggplot handle default
 		legend_box = if (!is.null(get_theme_elem("legend.box.background"))) !is_blank(get_theme_elem("legend.box.background")) else NULL,
 		panel_bg   = NULL,  # Let ggplot handle default

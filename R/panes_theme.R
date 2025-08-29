@@ -106,8 +106,6 @@ theme_pane_ui <- function(rv) {
 			actionButton("ui_revert_all_theme", "Revert All to Original", class = "btn btn-sm btn-warning")
 		),
 		tags$hr(),
-		h4(sprintf("Theme — %s", ap)),
-		tags$hr(),
 		
 		# tabs with persistence
 		tabsetPanel(

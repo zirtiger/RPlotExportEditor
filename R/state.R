@@ -75,11 +75,16 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
     
     # Initialize ONLY app-level settings with BASE defaults
     # These are settings that cannot be extracted from plots
-    app_settings <- c("width_mm", "height_mm", "dpi", "format", "base_size")
+    app_settings <- c("width_mm", "height_mm", "dpi", "format")
     for (setting in app_settings) {
       if (is.null(rv$edits[[index_str]][[setting]])) {
         rv$edits[[index_str]][[setting]] <- BASE[[setting]]
       }
+    }
+    
+    # Handle base_size separately - use extracted value if available, otherwise BASE default
+    if (is.null(rv$edits[[index_str]]$base_size)) {
+      rv$edits[[index_str]]$base_size <- rv$originals[[index_str]]$base_size %||% BASE$base_size
     }
   }
   
@@ -128,7 +133,12 @@ get_current_value <- function(rv, plot_name, setting, default = NULL) {
     return(BASE[[setting]])
   }
   
-  # 5. Return NULL (no value available)
+  # 5. For base_size, use BASE default if no value available
+  if (setting == "base_size") {
+    return(BASE$base_size)
+  }
+  
+  # 6. Return NULL (no value available)
   return(NULL)
 }
 
@@ -174,10 +184,7 @@ is_app_level_setting <- function(setting) {
     "width_mm", "height_mm", "dpi", "format",
     
     # Grid layout settings
-    "grid_rows", "grid_cols", "grid_collect", "grid_legend_pos",
-    
-    # App-wide defaults
-    "base_size"
+    "grid_rows", "grid_cols", "grid_collect", "grid_legend_pos"
   )
   
   setting %in% app_level

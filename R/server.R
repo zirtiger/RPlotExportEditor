@@ -253,6 +253,34 @@ app_server <- function(input, output, session) {
     })
   })
   
+  # --- Dynamic settings title ------------------------------------------
+  output$settings_title <- renderUI({
+    cur <- input$mainmenu %||% "grid"
+    ap <- rv$active_tab
+    
+    if (cur == "grid") {
+      return("Grid Settings")
+    } else if (cur == "export") {
+      return("Export Settings")
+    } else if (cur == "text") {
+      if (!is.null(ap) && !identical(ap, "Grid") && !is.null(rv$plots[[ap]])) {
+        plot_name <- rv$plot_names[[ap]] %||% paste("Plot", ap)
+        return(paste("Text -", plot_name))
+      }
+      return("Text Settings")
+    } else if (cur == "theme") {
+      if (!is.null(ap) && !identical(ap, "Grid") && !is.null(rv$plots[[ap]])) {
+        plot_name <- rv$plot_names[[ap]] %||% paste("Plot", ap)
+        return(paste("Theme -", plot_name))
+      }
+      return("Theme Settings")
+    } else if (cur == "originals") {
+      return("Original Settings")
+    } else {
+      return("Settings")
+    }
+  })
+  
   # --- Sidebar panes (render) ------------------------------------------
   output$subsidebar <- renderUI({
     cur <- input$mainmenu %||% "grid"

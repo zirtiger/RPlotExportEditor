@@ -18,7 +18,7 @@ app_ui <- function(request = NULL) {
       column(
         width = 3,
         shinydashboard::box(
-          title = "Settings",
+          title = uiOutput("settings_title"),
           width = 12, status = "primary", solidHeader = TRUE,
           height = "90vh",
           uiOutput("subsidebar")   # pane content (Grid/Export/Text/Theme)
