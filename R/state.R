@@ -63,6 +63,14 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
   # Initialize edits if they don't exist
   if (is.null(rv$edits[[index_str]]) || length(rv$edits[[index_str]]) == 0) {
     rv$edits[[index_str]] <- list()
+    
+    # Copy originals to edits so they appear in the UI
+    orig_settings <- rv$originals[[index_str]]
+    if (!is.null(orig_settings)) {
+      for (setting_name in names(orig_settings)) {
+        rv$edits[[index_str]][[setting_name]] <- orig_settings[[setting_name]]
+      }
+    }
   }
   
   # Initialize originals if they don't exist
