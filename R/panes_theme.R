@@ -225,11 +225,12 @@ register_theme_observers <- function(input, rv, session) {
 		ap <- rv$active_tab
 		if (is.null(ap) || identical(ap, "Grid")) return(NULL)
 		
-		for (index in get_plot_indices(rv)) {
-			if (get_plot_display_name(rv, index) == ap) {
-				return(index)
-			}
+		# The active tab is now the plot index (1, 2, 3, etc.)
+		# Just return it directly if it's a valid plot index
+		if (ap %in% names(rv$plots)) {
+			return(as.numeric(ap))
 		}
+		
 		return(NULL)
 	}
 	

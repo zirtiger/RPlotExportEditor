@@ -3,12 +3,20 @@
 # ---------- Build tabs ----------
 tabs_area_ui <- function(rv) {
   tabs <- list(
-    shiny::tabPanel("Grid", value = "Grid", imageOutput("grid_preview", height = "70vh"))
+    shiny::tabPanel("Grid", value = "Grid", 
+                    div(
+                      style = "margin-bottom: 10px;",
+                      downloadButton("download_grid", "Download Grid", class = "btn btn-success")
+                    ),
+                    imageOutput("grid_preview", height = "65vh"))
   )
-  for (nm in names(rv$plots)) {
+  # Get plot indices and names
+  plot_indices <- names(rv$plots)
+  for (index in plot_indices) {
+    plot_name <- rv$plot_names[[index]] %||% paste("Plot", index)
     tabs[[length(tabs) + 1]] <- shiny::tabPanel(
-      title = nm, value = nm,
-      imageOutput(paste0("plot_preview_", nm), height = "70vh")
+      title = plot_name, value = index,
+      plotOutput(paste0("plot_preview_", index), height = "70vh")
     )
   }
   do.call(shiny::tabsetPanel, c(id = "active_tabset", type = "tabs", tabs))
@@ -18,22 +26,20 @@ tabs_area_ui <- function(rv) {
 register_preview_outputs <- function(output, rv) {
   # Per-plot previews: use each plot's per-plot export settings
   observe({
-    lapply(names(rv$plots), function(nm) {
+    lapply(names(rv$plots), function(index) {
       local({
-        name <- nm
-        output[[paste0("plot_preview_", name)]] <- renderImage({
-          req(rv$plots[[name]])
-          ensure_edits(rv, name, grid = FALSE)
-          p <- apply_edits(rv$plots[[name]], rv$edits[[name]])
+        index_str <- as.character(index)
+        output[[paste0("plot_preview_", index)]] <- renderPlot({
+          req(rv$plots[[index_str]])
+          ensure_edits(rv, index_str, grid = FALSE)
           
-          ex <- rv$export[[name]] %||% list()
-          w  <- ex$width_mm  %||% BASE$width_mm
-          h  <- ex$height_mm %||% BASE$height_mm
-          d  <- ex$dpi       %||% BASE$dpi
-          f  <- ex$format    %||% BASE$format
+          # Make the preview reactive to edits changes by accessing them explicitly
+          edits <- rv$edits[[index_str]]
+          p <- apply_edits(rv$plots[[index_str]], edits)
           
-          render_preview_png(p, w, h, d, f)
-        }, deleteFile = TRUE)
+          # Display the plot directly
+          print(p)
+        })
       })
     })
   })
@@ -46,15 +52,20 @@ register_preview_outputs <- function(output, rv) {
     c <- rv$grid$cols %||% BASE$grid_cols
     idxs <- seq_len(r * c)
     
+    # Ensure cells exist
+    if (is.null(rv$grid$cells) || length(rv$grid$cells) == 0) {
+      rv$grid$cells <- lapply(idxs, function(k) "(empty)")
+    }
+    
     # Which plots are placed?
-    cells <- rv$grid$cells %||% list()
+    cells <- rv$grid$cells
     picked <- Filter(function(x) !is.null(x) && x != "(empty)" && x %in% names(rv$plots), cells)
     req(length(picked) > 0)
     
     # Apply GRID-specific edits (do not touch per-plot tabs)
     plots <- lapply(picked, function(nm) {
       ensure_edits(rv, nm, grid = TRUE)
-      apply_edits(rv$plots[[nm]], rv$grid_edits[[nm]])
+      apply_edits(rv$plots[[nm]], rv$edits[[nm]])
     })
     
     pw <- patchwork::wrap_plots(plots, nrow = r, ncol = c,

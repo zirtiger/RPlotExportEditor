@@ -13,12 +13,19 @@ grid_pane_ui <- function(rv) {
   r <- g$rows %||% BASE$grid_rows
   c <- g$cols %||% BASE$grid_cols
   idxs <- seq_len(r * c)
+  
+  # Ensure cells exist
+  if (length(g$cells) == 0) {
+    g$cells <- lapply(idxs, function(k) "(empty)")
+  }
+  
   rows_ui <- lapply(seq_len(r), function(i) {
     cols_ui <- lapply(seq_len(c), function(j) {
       k <- (i - 1) * c + j
+      cell_value <- if (k <= length(g$cells)) g$cells[[k]] else "(empty)"
       selectInput(paste0("cell_", k), paste0("Cell ", k),
                   choices = choices,
-                  selected = g$cells[[k]] %||% "(empty)")
+                  selected = cell_value)
     })
     fluidRow(lapply(cols_ui, function(x) column(6, x)))
   })
@@ -78,9 +85,19 @@ register_grid_observers <- function(input, rv, session) {
     r <- rv$grid$rows %||% BASE$grid_rows
     c <- rv$grid$cols %||% BASE$grid_cols
     idxs <- seq_len(r * c)
+    
+    # Ensure cells exist before accessing
+    if (length(rv$grid$cells) == 0) {
+      rv$grid$cells <- lapply(idxs, function(k) "(empty)")
+    }
+    
     rv$grid$cells <- lapply(idxs, function(k) {
       v <- input[[paste0("cell_", k)]]
-      if (is.null(v)) rv$grid$cells[[k]] %||% "(empty)" else v
+      if (is.null(v)) {
+        if (k <= length(rv$grid$cells)) rv$grid$cells[[k]] else "(empty)"
+      } else {
+        v
+      }
     })
   })
 }

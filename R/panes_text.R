@@ -107,13 +107,11 @@ register_text_observers <- function(input, rv, session) {
       ap <- rv$active_tab
       if (is.null(ap) || identical(ap, "Grid")) return()
       
-      # Find the plot index for the active tab
+      # The active tab is now the plot index (1, 2, 3, etc.)
+      # Just use it directly if it's a valid plot index
       plot_index <- NULL
-      for (index in get_plot_indices(rv)) {
-        if (get_plot_display_name(rv, index) == ap) {
-          plot_index <- index
-          break
-        }
+      if (ap %in% names(rv$plots)) {
+        plot_index <- as.numeric(ap)
       }
       
       if (is.null(plot_index)) return()
@@ -161,13 +159,11 @@ register_text_observers <- function(input, rv, session) {
     ap <- rv$active_tab
     if (is.null(ap) || identical(ap, "Grid")) return()
     
-    # Find the plot index for the active tab
+    # The active tab is now the plot index (1, 2, 3, etc.)
+    # Just use it directly if it's a valid plot index
     plot_index <- NULL
-    for (index in get_plot_indices(rv)) {
-      if (get_plot_display_name(rv, index) == ap) {
-        plot_index <- index
-        break
-      }
+    if (ap %in% names(rv$plots)) {
+      plot_index <- as.numeric(ap)
     }
     
     if (is.null(plot_index)) return()
