@@ -47,7 +47,6 @@ init_reactive_state <- function() {
       # UI state
   is_hydrating = FALSE,
   force_ui_update = 0,
-  switching_plots = FALSE,  # Flag to prevent updates during plot switching
   last_mainmenu = "text"
   )
 }

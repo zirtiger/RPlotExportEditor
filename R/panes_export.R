@@ -123,7 +123,6 @@ register_export_observers <- function(input, rv, session) {
   
   # Per-plot export writers
   observeEvent(input$ui_exp_width, {
-    if (rv$switching_plots) return()  # Prevent updates during plot switching
     ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
     rv$export[[ap]]$width_mm <- as_num_safe(input$ui_exp_width)
@@ -174,7 +173,6 @@ register_export_observers <- function(input, rv, session) {
   
   # Persist selected sub-tab
   observeEvent(input$export_tabs, {
-    if (rv$switching_plots) return()  # Prevent updates during plot switching
     rv$tabs$export <- input$export_tabs
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
 }

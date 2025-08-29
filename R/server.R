@@ -75,9 +75,6 @@ app_server <- function(input, output, session) {
     if (identical(rv$active_tab, "Grid")) {
       updateTabItems(session, "mainmenu", "grid")
     } else if (length(rv$plots) > 0) {
-      # Set flag to prevent updates during plot switching
-      rv$switching_plots <- TRUE
-      
       # For plot tabs, ensure we have fresh edits for this specific plot
       # Only ensure edits if we don't already have originals for this plot
       # This prevents unnecessary re-extraction and potential inheritance issues
@@ -89,11 +86,6 @@ app_server <- function(input, output, session) {
       # default to "text" instead of staying on "grid"
       target_menu <- if (is.null(rv$last_mainmenu) || rv$last_mainmenu == "grid") "text" else rv$last_mainmenu
       updateTabItems(session, "mainmenu", target_menu)
-      
-      # Turn off the flag after a short delay to allow UI to update
-      # This prevents inheritance issues while ensuring proper plot loading
-      invalidateLater(100, session)
-      rv$switching_plots <- FALSE
     }
   }, ignoreInit = FALSE)
   
