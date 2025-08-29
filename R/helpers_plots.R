@@ -463,6 +463,13 @@ extract_base_size <- function(plot_obj) {
 	extract_theme_size <- function(elem, plot_obj) {
 		theme_elem <- get_theme_elem(elem)
 		if (!is.null(theme_elem) && !is_blank(theme_elem) && !is.null(theme_elem$size)) {
+			# Check if the size is already a relative multiplier (typical range 0.5 to 3.0)
+			# If it's in this range, it's likely already relative
+			if (theme_elem$size >= 0.5 && theme_elem$size <= 3.0) {
+				cat("DEBUG: extract_theme_size for", elem, ":", theme_elem$size, "is already relative\n")
+				return(theme_elem$size)
+			}
+			
 			# Extract the base_size from the plot to calculate relative multiplier
 			plot_base_size <- extract_base_size(plot_obj) %||% BASE$base_size
 			cat("DEBUG: extract_theme_size for", elem, ":", theme_elem$size, "/", plot_base_size, "=", theme_elem$size / plot_base_size, "\n")
