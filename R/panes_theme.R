@@ -116,10 +116,7 @@ theme_pane_ui <- function(rv) {
 			tabPanel("Base",
 				selectInput("ui_theme", "Theme",
 						choices = c("theme_minimal","theme_classic","theme_bw","theme_light","theme_gray"),
-						selected = theme_val),
-				sliderInput("ui_base_size", "Base text size", 
-						value = base_size_val, 
-						min = 6, max = 30, step = 1)
+						selected = theme_val)
 			),
 			tabPanel("Legend",
 				selectInput("ui_legend_pos", "Legend position", 
@@ -143,14 +140,14 @@ theme_pane_ui <- function(rv) {
 							value = grid_major_val),
 				div(class = if (grid_major_on) NULL else "muted-control",
 					selectInput("ui_grid_major_linetype", "Major grid linetype",
-							choices = c("solid","dashed","dotted","dotdash","longdash","twodash"),
-							selected = grid_major_linetype_val)),
+							choices = c("Default", "solid","dashed","dotted","dotdash","longdash","twodash"),
+							selected = if (is.null(grid_major_linetype_val)) "Default" else grid_major_linetype_val)),
 				checkboxInput("ui_grid_minor", "Minor grid lines", 
 							value = grid_minor_val),
 				div(class = if (grid_minor_on) NULL else "muted-control",
 					selectInput("ui_grid_minor_linetype", "Minor grid linetype",
-							choices = c("solid","dashed","dotted","dotdash","longdash","twodash"),
-							selected = grid_minor_linetype_val)),
+							choices = c("Default", "solid","dashed","dotted","dotdash","longdash","twodash"),
+							selected = if (is.null(grid_minor_linetype_val)) "Default" else grid_minor_linetype_val)),
 				selectInput("ui_grid_color", "Grid color", 
 						choices = c("Default", "Gray", "Light gray", "Dark gray", "Black"),
 						selected = grid_color_val)
@@ -243,14 +240,7 @@ register_theme_observers <- function(input, rv, session) {
 		rv$edits[[as.character(plot_index)]]$theme <- input$ui_theme
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
-	observeEvent(input$ui_base_size, {
-		if (rv$is_hydrating) return()
-		plot_index <- get_plot_index()
-		if (is.null(plot_index)) return()
-		
-		load_plot_settings(rv, plot_index)
-		rv$edits[[as.character(plot_index)]]$base_size <- as_num_safe(input$ui_base_size)
-	}, ignoreInit = TRUE, ignoreNULL = TRUE)
+
 	
 	observeEvent(input$ui_legend_pos, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
@@ -321,7 +311,9 @@ register_theme_observers <- function(input, rv, session) {
 		if (is.null(plot_index)) return()
 		
 		load_plot_settings(rv, plot_index)
-		rv$edits[[as.character(plot_index)]]$grid_major_linetype <- input$ui_grid_major_linetype
+		# Convert "Default" to NULL (let ggplot handle it)
+		value <- if (input$ui_grid_major_linetype == "Default") NULL else input$ui_grid_major_linetype
+		rv$edits[[as.character(plot_index)]]$grid_major_linetype <- value
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	observeEvent(input$ui_grid_minor_linetype, {
@@ -330,7 +322,9 @@ register_theme_observers <- function(input, rv, session) {
 		if (is.null(plot_index)) return()
 		
 		load_plot_settings(rv, plot_index)
-		rv$edits[[as.character(plot_index)]]$grid_minor_linetype <- input$ui_grid_minor_linetype
+		# Convert "Default" to NULL (let ggplot handle it)
+		value <- if (input$ui_grid_minor_linetype == "Default") NULL else input$ui_grid_minor_linetype
+		rv$edits[[as.character(plot_index)]]$grid_minor_linetype <- value
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	# Colors tab

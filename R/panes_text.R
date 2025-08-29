@@ -50,28 +50,75 @@ text_pane_ui <- function(rv) {
         textInput("ui_ylab",     "Y label",  ylab_now)
       ),
       tabPanel("Text Sizes",
-        sliderInput("ui_title_size", "Title size", 
-                   value = e$title_size %||% 14, 
-                   min = 8, max = 34, step = 1),
-        sliderInput("ui_subtitle_size", "Subtitle size", 
-                   value = e$subtitle_size %||% 12, 
-                   min = 6, max = 30, step = 1),
-        sliderInput("ui_caption_size", "Caption size", 
-                   value = e$caption_size %||% 10, 
-                   min = 6, max = 28, step = 1),
-        div(class = if (nzchar(xlab_now) || nzchar(ylab_now)) NULL else "muted-control",
-            sliderInput("ui_axis_title_size", "Axis title size", 
-                       value = e$axis_title_size %||% 12, 
-                       min = 8, max = 30, step = 1)),
-        sliderInput("ui_axis_text_size", "Axis text size", 
-                   value = e$axis_text_size %||% 10, 
-                   min = 6, max = 28, step = 1),
-        sliderInput("ui_legend_title_size", "Legend title size", 
-                   value = e$legend_title_size %||% 12, 
-                   min = 8, max = 30, step = 1),
-        sliderInput("ui_legend_text_size", "Legend text size", 
-                   value = e$legend_text_size %||% 10, 
-                   min = 6, max = 28, step = 1)
+        # Base size control (moved from theme)
+        sliderInput("ui_base_size", "Base text size", 
+                   value = e$base_size %||% 12, 
+                   min = 8, max = 24, step = 1),
+        tags$hr(),
+        h6("Relative text sizes (multipliers of base size):"),
+        # Title size as relative multiplier
+        div(
+          sliderInput("ui_title_size", "Title size multiplier", 
+                     value = e$title_size %||% 1.2, 
+                     min = 0.5, max = 3.0, step = 0.1),
+          tags$small(style="color:#777;", 
+                     "Actual size: ", 
+                     round((e$title_size %||% 1.2) * (e$base_size %||% 12), 1))
+        ),
+        # Subtitle size as relative multiplier
+        div(
+          sliderInput("ui_subtitle_size", "Subtitle size multiplier", 
+                     value = e$subtitle_size %||% 1.0, 
+                     min = 0.5, max = 2.5, step = 0.1),
+          tags$small(style="color:#777;", 
+                     "Actual size: ", 
+                     round((e$subtitle_size %||% 1.0) * (e$base_size %||% 12), 1))
+        ),
+        # Caption size as relative multiplier
+        div(
+          sliderInput("ui_caption_size", "Caption size multiplier", 
+                     value = e$caption_size %||% 0.8, 
+                     min = 0.5, max = 2.0, step = 0.1),
+          tags$small(style="color:#777;", 
+                     "Actual size: ", 
+                     round((e$caption_size %||% 0.8) * (e$base_size %||% 12), 1))
+        ),
+        # Axis title size as relative multiplier
+        div(
+          sliderInput("ui_axis_title_size", "Axis title size multiplier", 
+                     value = e$axis_title_size %||% 1.0, 
+                     min = 0.5, max = 2.5, step = 0.1),
+          tags$small(style="color:#777;", 
+                     "Actual size: ", 
+                     round((e$axis_title_size %||% 1.0) * (e$base_size %||% 12), 1))
+        ),
+        # Axis text size as relative multiplier
+        div(
+          sliderInput("ui_axis_text_size", "Axis text size multiplier", 
+                     value = e$axis_text_size %||% 0.8, 
+                     min = 0.5, max = 2.0, step = 0.1),
+          tags$small(style="color:#777;", 
+                     "Actual size: ", 
+                     round((e$axis_text_size %||% 0.8) * (e$base_size %||% 12), 1))
+        ),
+        # Legend title size as relative multiplier
+        div(
+          sliderInput("ui_legend_title_size", "Legend title size multiplier", 
+                     value = e$legend_title_size %||% 1.0, 
+                     min = 0.5, max = 2.5, step = 0.1),
+          tags$small(style="color:#777;", 
+                     "Actual size: ", 
+                     round((e$legend_title_size %||% 1.0) * (e$base_size %||% 12), 1))
+        ),
+        # Legend text size as relative multiplier
+        div(
+          sliderInput("ui_legend_text_size", "Legend text size multiplier", 
+                     value = e$legend_text_size %||% 0.8, 
+                     min = 0.5, max = 2.0, step = 0.1),
+          tags$small(style="color:#777;", 
+                     "Actual size: ", 
+                     round((e$legend_text_size %||% 0.8) * (e$base_size %||% 12), 1))
+        )
       ),
       tabPanel("Axis",
         fluidRow(
@@ -134,6 +181,9 @@ register_text_observers <- function(input, rv, session) {
   bind_edit("ui_xlab",     "xlab")
   bind_edit("ui_ylab",     "ylab")
   
+  # Base size (moved from theme)
+  bind_edit("ui_base_size", "base_size")
+  
   # Text sizes
   bind_edit("ui_title_size", "title_size")
   bind_edit("ui_subtitle_size", "subtitle_size")
@@ -173,7 +223,7 @@ register_text_observers <- function(input, rv, session) {
     src <- rv$edits[[as.character(plot_index)]]
     
     text_fields <- c("title","subtitle","caption","xlab","ylab",
-                     "title_size","subtitle_size","caption_size",
+                     "base_size","title_size","subtitle_size","caption_size",
                      "axis_title_size","axis_text_size","legend_title_size","legend_text_size",
                      "x_min","x_max","y_min","y_max","x_step_major","x_step_minor","y_step_major","y_step_minor")
     

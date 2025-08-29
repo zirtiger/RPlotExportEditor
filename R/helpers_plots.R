@@ -66,29 +66,58 @@ apply_edits <- function(p, edits) {
   }
   p <- apply_level_colors(p)
   
-  # Custom text sizes
+  # Custom text sizes (relative to base_size)
   text_theme <- ggplot2::theme()
   
+  # Helper function to calculate actual size from relative multiplier
+  get_actual_size <- function(relative_size, base_size) {
+    if (is.null(relative_size) || is.null(base_size)) return(NULL)
+    return(relative_size * base_size)
+  }
+  
+  base_size <- e$base_size %||% BASE$base_size
+  
   if (!is.null(e$title_size)) {
-    text_theme <- text_theme + ggplot2::theme(plot.title = ggplot2::element_text(size = e$title_size))
+    actual_size <- get_actual_size(e$title_size, base_size)
+    if (!is.null(actual_size)) {
+      text_theme <- text_theme + ggplot2::theme(plot.title = ggplot2::element_text(size = actual_size))
+    }
   }
   if (!is.null(e$subtitle_size)) {
-    text_theme <- text_theme + ggplot2::theme(plot.subtitle = ggplot2::element_text(size = e$subtitle_size))
+    actual_size <- get_actual_size(e$subtitle_size, base_size)
+    if (!is.null(actual_size)) {
+      text_theme <- text_theme + ggplot2::theme(plot.subtitle = ggplot2::element_text(size = actual_size))
+    }
   }
   if (!is.null(e$caption_size)) {
-    text_theme <- text_theme + ggplot2::theme(plot.caption = ggplot2::element_text(size = e$caption_size))
+    actual_size <- get_actual_size(e$caption_size, base_size)
+    if (!is.null(actual_size)) {
+      text_theme <- text_theme + ggplot2::theme(plot.caption = ggplot2::element_text(size = actual_size))
+    }
   }
   if (!is.null(e$axis_title_size)) {
-    text_theme <- text_theme + ggplot2::theme(axis.title = ggplot2::element_text(size = e$axis_title_size))
+    actual_size <- get_actual_size(e$axis_title_size, base_size)
+    if (!is.null(actual_size)) {
+      text_theme <- text_theme + ggplot2::theme(axis.title = ggplot2::element_text(size = actual_size))
+    }
   }
   if (!is.null(e$axis_text_size)) {
-    text_theme <- text_theme + ggplot2::theme(axis.text = ggplot2::element_text(size = e$axis_text_size))
+    actual_size <- get_actual_size(e$axis_text_size, base_size)
+    if (!is.null(actual_size)) {
+      text_theme <- text_theme + ggplot2::theme(axis.text = ggplot2::element_text(size = actual_size))
+    }
   }
   if (!is.null(e$legend_title_size)) {
-    text_theme <- text_theme + ggplot2::theme(legend.title = ggplot2::element_text(size = e$legend_title_size))
+    actual_size <- get_actual_size(e$legend_title_size, base_size)
+    if (!is.null(actual_size)) {
+      text_theme <- text_theme + ggplot2::theme(legend.title = ggplot2::element_text(size = actual_size))
+    }
   }
   if (!is.null(e$legend_text_size)) {
-    text_theme <- text_theme + ggplot2::theme(legend.text = ggplot2::element_text(size = e$legend_text_size))
+    actual_size <- get_actual_size(e$legend_text_size, base_size)
+    if (!is.null(actual_size)) {
+      text_theme <- text_theme + ggplot2::theme(legend.text = ggplot2::element_text(size = actual_size))
+    }
   }
   
   p <- p + text_theme
