@@ -475,6 +475,46 @@ register_theme_observers <- function(input, rv, session) {
 		}
 	})
 	
+	# Force color input updates when switching plots
+	observeEvent(rv$active_tab, {
+		if (is.null(rv$active_tab) || identical(rv$active_tab, "Grid")) return()
+		if (rv$is_hydrating) return()
+		
+		# Small delay to ensure UI is ready
+		invalidateLater(50, session)
+		
+		plot_index <- get_plot_index()
+		if (is.null(plot_index)) return()
+		
+		index_str <- as.character(plot_index)
+		e <- rv$edits[[index_str]]
+		
+		# Update colour level inputs with current values
+		if (!is.null(e$colour_levels) && length(e$colour_levels)) {
+			lapply(seq_along(e$colour_levels), function(i) {
+				input_id <- paste0("ui_colour_", i)
+				current_color <- e$colour_levels_cols[i] %||% "#1f77b4"
+				# Force update the color input
+				updateTextInput(session, input_id, value = current_color)
+			})
+		}
+		
+		# Update fill level inputs with current values
+		if (!is.null(e$fill_levels) && length(e$fill_levels)) {
+			lapply(seq_along(e$fill_levels), function(i) {
+				input_id <- paste0("ui_fill_", i)
+				current_color <- e$fill_levels_cols[i] %||% "#1f77b4"
+				if (requireNamespace("colourpicker", quietly = TRUE)) {
+					# For colourpicker inputs, use updateColourInput
+					colourpicker::updateColourInput(session, input_id, value = current_color)
+				} else {
+					# For text inputs, use updateTextInput
+					updateTextInput(session, input_id, value = current_color)
+				}
+			})
+		}
+	}, ignoreInit = FALSE)
+	
 	# Continuous color palette observers
 	observeEvent(input$ui_continuous_colour_palette, {
 		if (rv$is_hydrating) return()
