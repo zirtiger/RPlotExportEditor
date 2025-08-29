@@ -60,38 +60,44 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
   
   index_str <- as.character(plot_index)
   
-  # ALWAYS start with a clean slate for this plot to prevent inheritance issues
-  rv$edits[[index_str]] <- list()
-  
-  # Copy originals to edits so they appear in the UI
-  # This preserves NULL values (ggplot handles these automatically)
-  orig_settings <- rv$originals[[index_str]]
-  if (!is.null(orig_settings)) {
-    for (setting_name in names(orig_settings)) {
-      rv$edits[[index_str]][[setting_name]] <- orig_settings[[setting_name]]
+  # Initialize edits if they don't exist
+  if (is.null(rv$edits[[index_str]]) || length(rv$edits[[index_str]]) == 0) {
+    rv$edits[[index_str]] <- list()
+    
+    # Copy originals to edits so they appear in the UI
+    # This preserves NULL values (ggplot handles these automatically)
+    orig_settings <- rv$originals[[index_str]]
+    if (!is.null(orig_settings)) {
+      for (setting_name in names(orig_settings)) {
+        rv$edits[[index_str]][[setting_name]] <- orig_settings[[setting_name]]
+      }
     }
-  }
-  
-  # Clear color-related settings to prevent inheritance between plots
-  # These should always be specific to each plot
-  color_settings <- c("colour_levels_cols", "fill_levels_cols", "palette", 
-                      "continuous_colour_palette", "continuous_fill_palette")
-  for (setting in color_settings) {
-    rv$edits[[index_str]][[setting]] <- NULL
-  }
-  
-  # Initialize ONLY app-level settings with BASE defaults
-  # These are settings that cannot be extracted from plots
-  app_settings <- c("width_mm", "height_mm", "dpi", "format")
-  for (setting in app_settings) {
-    if (is.null(rv$edits[[index_str]][[setting]])) {
-      rv$edits[[index_str]][[setting]] <- BASE[[setting]]
+    
+    # Initialize ONLY app-level settings with BASE defaults
+    # These are settings that cannot be extracted from plots
+    app_settings <- c("width_mm", "height_mm", "dpi", "format")
+    for (setting in app_settings) {
+      if (is.null(rv$edits[[index_str]][[setting]])) {
+        rv$edits[[index_str]][[setting]] <- BASE[[setting]]
+      }
     }
-  }
-  
-  # Handle base_size separately - use extracted value if available, otherwise BASE default
-  if (is.null(rv$edits[[index_str]]$base_size)) {
-    rv$edits[[index_str]]$base_size <- rv$originals[[index_str]]$base_size %||% BASE$base_size
+    
+    # Handle base_size separately - use extracted value if available, otherwise BASE default
+    if (is.null(rv$edits[[index_str]]$base_size)) {
+      rv$edits[[index_str]]$base_size <- rv$originals[[index_str]]$base_size %||% BASE$base_size
+    }
+  } else {
+    # Edits already exist, but ensure base_size is correct for this plot
+    # This prevents accumulation when switching between plots
+    if (!is.null(rv$originals[[index_str]]) && !is.null(rv$originals[[index_str]]$base_size)) {
+      # Use the original plot's base_size
+      rv$edits[[index_str]]$base_size <- rv$originals[[index_str]]$base_size
+    } else {
+      # Use BASE default if no original base_size
+      rv$edits[[index_str]]$base_size <- BASE$base_size
+    }
+    
+
   }
   
   # Initialize originals if they don't exist
