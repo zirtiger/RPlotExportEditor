@@ -60,49 +60,21 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
   
   index_str <- as.character(plot_index)
   
-  # Initialize edits if they don't exist
-  if (is.null(rv$edits[[index_str]]) || length(rv$edits[[index_str]]) == 0) {
-    rv$edits[[index_str]] <- list()
+      # Initialize edits if they don't exist
+    if (is.null(rv$edits[[index_str]]) || length(rv$edits[[index_str]]) == 0) {
+      rv$edits[[index_str]] <- list()
+      
+      # DO NOT copy originals to edits automatically
+      # Edits should only contain user modifications
+      # The UI will get values from originals when edits are empty
     
-    # Copy originals to edits so they appear in the UI
-    # This preserves NULL values (ggplot handles these automatically)
-    orig_settings <- rv$originals[[index_str]]
-    if (!is.null(orig_settings)) {
-      for (setting_name in names(orig_settings)) {
-        rv$edits[[index_str]][[setting_name]] <- orig_settings[[setting_name]]
-      }
-    }
-    
-    # Initialize ONLY app-level settings with BASE defaults
-    # These are settings that cannot be extracted from plots
-    app_settings <- c("width_mm", "height_mm", "dpi", "format")
-    for (setting in app_settings) {
-      if (is.null(rv$edits[[index_str]][[setting]])) {
-        rv$edits[[index_str]][[setting]] <- BASE[[setting]]
-      }
-    }
-    
-    # Handle base_size separately - use extracted value if available, otherwise BASE default
-    if (is.null(rv$edits[[index_str]]$base_size)) {
-      rv$edits[[index_str]]$base_size <- rv$originals[[index_str]]$base_size %||% BASE$base_size
-    }
+          # DO NOT initialize any settings automatically
+      # Edits should start completely empty
+      # The UI will get values from originals when edits are empty
   } else {
-    # Edits already exist, but ensure base_size is correct for this plot
-    # This prevents accumulation when switching between plots
-    cat("DEBUG: ensure_edits - edits exist for plot", plot_name, "index_str:", index_str, "\n")
-    cat("DEBUG: ensure_edits - checking originals for base_size\n")
-    
-    if (!is.null(rv$originals[[index_str]]) && !is.null(rv$originals[[index_str]]$base_size)) {
-      # Use the original plot's base_size
-      cat("DEBUG: ensure_edits - setting base_size to original value:", rv$originals[[index_str]]$base_size, "\n")
-      rv$edits[[index_str]]$base_size <- rv$originals[[index_str]]$base_size
-    } else {
-      # Use BASE default if no original base_size
-      cat("DEBUG: ensure_edits - setting base_size to BASE default:", BASE$base_size, "\n")
-      rv$edits[[index_str]]$base_size <- BASE$base_size
-    }
-    
-
+    # Edits already exist - this means the user has actually made changes
+    # Do not modify existing edits
+    cat("DEBUG: ensure_edits - edits exist for plot", plot_name, "index_str:", index_str, " (user has made changes)\n")
   }
   
   # Initialize originals if they don't exist
