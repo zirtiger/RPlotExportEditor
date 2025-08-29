@@ -522,7 +522,7 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 	}
 	
 	# Store ALL original values
-	rv$originals[[index_str]] <- list(
+	orig <- list(
 		# Labels
 		title      = get_lab("title"),
 		subtitle   = get_lab("subtitle"),
@@ -575,6 +575,65 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 		legend_title_size = BASE$legend_title_size,
 		legend_text_size = BASE$legend_text_size
 	)
+
+	# Build a parallel source map indicating origin of each value
+	src <- list()
+
+	# Labels: treat non-empty as from plot
+	src$title    <- if (nzchar(orig$title)) "plot" else "missing"
+	src$subtitle <- if (nzchar(orig$subtitle)) "plot" else "missing"
+	src$caption  <- if (nzchar(orig$caption)) "plot" else "missing"
+	src$xlab     <- if (nzchar(orig$xlab)) "plot" else "missing"
+	src$ylab     <- if (nzchar(orig$ylab)) "plot" else "missing"
+
+	# Theme/base defaults
+	src$theme      <- "base"
+	src$base_size  <- "base"
+	src$legend_pos <- "base"
+	src$legend_box <- if (!is.null(lbox)) "plot" else "missing"
+	src$panel_bg   <- "missing"
+	src$plot_bg    <- "missing"
+
+	# Grid-related settings
+	src$grid_major            <- if (!is.null(maj_el)) "plot" else "base"
+	src$grid_minor            <- if (!is.null(min_el)) "plot" else "base"
+	src$grid_major_linetype   <- if (!is.null(maj_el)) "plot" else "base"
+	src$grid_minor_linetype   <- if (!is.null(min_el)) "plot" else "base"
+	src$grid_color            <- "missing"
+
+	# Axis
+	src$x_min <- if (!is.null(orig$x_min)) "plot" else "missing"
+	src$x_max <- if (!is.null(orig$x_max)) "plot" else "missing"
+	src$y_min <- if (!is.null(orig$y_min)) "plot" else "missing"
+	src$y_max <- if (!is.null(orig$y_max)) "plot" else "missing"
+
+	# Steps are derived suggestions
+	src$x_step_major <- if (!is.null(x_info$step_major)) "plot" else "derived"
+	src$x_step_minor <- if (!is.null(x_info$step_minor)) "plot" else "derived"
+	src$y_step_major <- if (!is.null(y_info$step_major)) "plot" else "derived"
+	src$y_step_minor <- if (!is.null(y_info$step_minor)) "plot" else "derived"
+
+	# Colors/palettes
+	src$palette                     <- "base"
+	src$continuous_colour_palette   <- if (is.null(continuous_colour_palette)) "missing" else "derived"
+	src$continuous_fill_palette     <- if (is.null(continuous_fill_palette)) "missing" else "derived"
+	src$colour_levels               <- if (length(orig$colour_levels)) "plot" else "missing"
+	src$colour_levels_cols          <- if (length(orig$colour_levels_cols)) "plot" else "missing"
+	src$fill_levels                 <- if (length(orig$fill_levels)) "plot" else "missing"
+	src$fill_levels_cols            <- if (length(orig$fill_levels_cols)) "plot" else "missing"
+
+	# Text sizes are base defaults
+	src$title_size         <- "base"
+	src$subtitle_size      <- "base"
+	src$caption_size       <- "base"
+	src$axis_title_size    <- "base"
+	src$axis_text_size     <- "base"
+	src$legend_title_size  <- "base"
+	src$legend_text_size   <- "base"
+
+	# Assign to reactive state
+	rv$originals[[index_str]] <- orig
+	rv$originals_src[[index_str]] <- src
 }
 
 # Get plot name for display

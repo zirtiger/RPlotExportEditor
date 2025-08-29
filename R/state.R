@@ -34,12 +34,14 @@ init_reactive_state <- function() {
       grid = "Layout",
       export = "Settings",
       text = "Content",
-      theme = "Base"
+      theme = "Base",
+      originals = "Text"
     ),
     
     # Plot edits and originals
     edits = list(),
     originals = list(),
+    originals_src = list(),
     
     # Export settings
     export = list(),

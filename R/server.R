@@ -37,6 +37,7 @@ app_server <- function(input, output, session) {
       add_disabled(shinydashboard::menuItem("Export", tabName = "export", icon = icon("download")), ma$export),
       add_disabled(shinydashboard::menuItem("Text",   tabName = "text",   icon = icon("font")), ma$text),
       add_disabled(shinydashboard::menuItem("Theme",  tabName = "theme",  icon = icon("paint-brush")), ma$theme),
+      shinydashboard::menuItem("Original settings", tabName = "originals", icon = icon("history")),
       hr(),
       fileInput("plots_rds", "Load ggplot (.rds, multiple)", accept = ".rds", multiple = TRUE),
       actionButton("load_demo", "Load 3 demo plots", class = "btn btn-link")
@@ -276,6 +277,7 @@ app_server <- function(input, output, session) {
            export = export_pane_ui(rv),
            text   = text_pane_ui(rv),
            theme  = theme_pane_ui(rv),
+           originals = originals_pane_ui(rv),
            div(helpText("Pick a section from the left."))
     )
   })
@@ -287,4 +289,5 @@ app_server <- function(input, output, session) {
   register_text_observers(input, rv, session)
   register_theme_observers(input, rv, session)
   register_export_observers(input, rv, session)
+  register_originals_observers(input, rv, session)
 }

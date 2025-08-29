@@ -42,6 +42,11 @@ input[type="number"] { padding: 4px 6px; font-size: 12px; }
 /***** Tab panel content *****/
 .tab-pane { padding: 10px 0; }
 
+/* Originals inspector styles */
+.muted-control { opacity: 0.6; }
+.box .tab-content code { background: #f7f7f7; padding: 1px 4px; border-radius: 3px; }
+.box .tab-content em { color: #777; }
+
 /***** Plot/image outputs: remove extra gaps inside boxes only *****/
 .box .shiny-plot-output,
 .box .shiny-image-output {
