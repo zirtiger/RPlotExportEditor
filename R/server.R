@@ -153,75 +153,14 @@ app_server <- function(input, output, session) {
   }, ignoreInit = TRUE)
   
   # --- Tabs & previews -------------------------------------------------
-  output$tabs_area <- renderUI({
-    # Build a tabset with "Grid" + one tab per plot
-    tabs <- list(
-      tabPanel("Grid", value = "Grid", 
-               div(
-                 style = "margin-bottom: 10px;",
-                 downloadButton("download_grid", "Download Grid", class = "btn btn-success")
-               ),
-               plotOutput("grid_preview", height = "65vh"))
-    )
-    
-    # Get plot indices in order
-    plot_indices <- get_plot_indices(rv)
-    for (index in plot_indices) {
-      plot_name <- get_plot_display_name(rv, index)
-      tabs[[length(tabs) + 1]] <- tabPanel(plot_name, value = plot_name,
-                                           div(
-                                             style = "margin-bottom: 10px;",
-                                             downloadButton(paste0("download_plot_", plot_name), 
-                                                          paste("Download", plot_name), 
-                                                          class = "btn btn-success")
-                                           ),
-                                           plotOutput(paste0("plot_prev_", plot_name), height = "65vh"))
-    }
-    do.call(tabsetPanel, c(id = "main_tabs", tabs))
-  })
+  # Tabs are now handled in tabs_preview.R
   
-  # Track the tabset created in tabs_previews.R (id = "active_tabset")
+  # Track the tabset created in tabs_preview.R (id = "active_tabset")
   observeEvent(input$active_tabset, {
     rv$active_tab <- input$active_tabset
   }, ignoreInit = FALSE)
   
-  # Per-plot previews
-  observe({
-    plot_indices <- get_plot_indices(rv)
-    lapply(plot_indices, function(index) {
-      local({
-        index_str <- as.character(index)
-        plot_name <- get_plot_display_name(rv, index)
-        output[[paste0("plot_prev_", plot_name)]] <- renderPlot({
-          req(!is.null(rv$plots[[index_str]]))
-          # Load settings for this plot if needed
-          load_plot_settings(rv, index)
-          apply_edits(rv$plots[[index_str]], rv$edits[[index_str]])
-        })
-      })
-    })
-  })
-  
-  # Grid preview (uses grid settings; lays out plots in order)
-  output$grid_preview <- renderPlot({
-    req(length(rv$plots) > 0)
-    r <- rv$grid$rows %||% BASE$grid_rows
-    c <- rv$grid$cols %||% BASE$grid_cols
-    n <- r * c
-    plot_indices <- get_plot_indices(rv)
-    picked <- plot_indices[seq_len(min(n, length(plot_indices)))]
-    req(length(picked) > 0)
-    
-    plots <- lapply(picked, function(index) {
-      index_str <- as.character(index)
-      load_plot_settings(rv, index)
-      apply_edits(rv$plots[[index_str]], rv$edits[[index_str]])
-    })
-    
-    patchwork::wrap_plots(plots, nrow = r, ncol = c,
-                          guides = if (isTRUE(rv$grid$collect %||% BASE$grid_collect)) "collect" else "keep") +
-      theme(legend.position = legend_pos_value(rv$grid$legend %||% BASE$grid_legend_pos))
-  })
+  # Grid preview is now handled in tabs_preview.R
   
   # --- Download handlers ------------------------------------------------
   # Grid download

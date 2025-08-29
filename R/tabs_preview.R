@@ -3,7 +3,12 @@
 # ---------- Build tabs ----------
 tabs_area_ui <- function(rv) {
   tabs <- list(
-    shiny::tabPanel("Grid", value = "Grid", imageOutput("grid_preview", height = "70vh"))
+    shiny::tabPanel("Grid", value = "Grid", 
+                    div(
+                      style = "margin-bottom: 10px;",
+                      downloadButton("download_grid", "Download Grid", class = "btn btn-success")
+                    ),
+                    imageOutput("grid_preview", height = "65vh"))
   )
   for (nm in names(rv$plots)) {
     tabs[[length(tabs) + 1]] <- shiny::tabPanel(
@@ -54,7 +59,7 @@ register_preview_outputs <- function(output, rv) {
     # Apply GRID-specific edits (do not touch per-plot tabs)
     plots <- lapply(picked, function(nm) {
       ensure_edits(rv, nm, grid = TRUE)
-      apply_edits(rv$plots[[nm]], rv$grid_edits[[nm]])
+      apply_edits(rv$plots[[nm]], rv$edits[[nm]])
     })
     
     pw <- patchwork::wrap_plots(plots, nrow = r, ncol = c,
