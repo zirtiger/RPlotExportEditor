@@ -632,7 +632,7 @@ extract_plot_settings <- function(rv, index, plot_obj) {
 		
 		# Theme settings (only if explicitly set)
 		theme      = NULL,  # Let ggplot handle default
-		base_size  = extract_theme_size("text"),
+		base_size  = NULL,  # Use BASE default (not extracted from plot)
 		legend_pos = NULL,  # Let ggplot handle default
 		legend_box = if (!is.null(get_theme_elem("legend.box.background"))) !is_blank(get_theme_elem("legend.box.background")) else NULL,
 		panel_bg   = NULL,  # Let ggplot handle default

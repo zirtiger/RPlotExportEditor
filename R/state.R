@@ -75,7 +75,7 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
     
     # Initialize ONLY app-level settings with BASE defaults
     # These are settings that cannot be extracted from plots
-    app_settings <- c("width_mm", "height_mm", "dpi", "format")
+    app_settings <- c("width_mm", "height_mm", "dpi", "format", "base_size")
     for (setting in app_settings) {
       if (is.null(rv$edits[[index_str]][[setting]])) {
         rv$edits[[index_str]][[setting]] <- BASE[[setting]]
