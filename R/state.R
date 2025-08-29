@@ -86,6 +86,17 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
     if (is.null(rv$edits[[index_str]]$base_size)) {
       rv$edits[[index_str]]$base_size <- rv$originals[[index_str]]$base_size %||% BASE$base_size
     }
+  } else {
+    # Edits already exist, but ensure base_size is correct for this plot
+    # This prevents accumulation when switching between plots
+    # ALWAYS use the correct base_size for this specific plot
+    if (!is.null(rv$originals[[index_str]]) && !is.null(rv$originals[[index_str]]$base_size)) {
+      # Use the original plot's base_size
+      rv$edits[[index_str]]$base_size <- rv$originals[[index_str]]$base_size
+    } else {
+      # Use BASE default if no original base_size
+      rv$edits[[index_str]]$base_size <- BASE$base_size
+    }
   }
   
   # Initialize originals if they don't exist
@@ -135,6 +146,8 @@ get_current_value <- function(rv, plot_name, setting, default = NULL) {
   
   # 5. For base_size, use BASE default if no value available
   if (setting == "base_size") {
+    # Safety check: ensure base_size is never accumulated
+    # Always return the BASE default if no specific value is set
     return(BASE$base_size)
   }
   

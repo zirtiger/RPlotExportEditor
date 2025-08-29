@@ -80,6 +80,9 @@ app_server <- function(input, output, session) {
       # This prevents unnecessary re-extraction and potential inheritance issues
       if (is.null(rv$originals[[rv$active_tab]]) || length(rv$originals[[rv$active_tab]]) == 0) {
         ensure_edits(rv, rv$active_tab, grid = FALSE)
+      } else {
+        # Ensure edits exist and base_size is correct for this plot
+        ensure_edits(rv, rv$active_tab, grid = FALSE)
       }
       
       # If this is the first time switching to a plot (no last_mainmenu set),

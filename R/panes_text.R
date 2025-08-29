@@ -57,7 +57,7 @@ text_pane_ui <- function(rv) {
         fluidRow(
           column(6,
             div(
-              sliderInput("ui_title_size", "Title multiplier", 
+              sliderInput("ui_title_size", "Title", 
                          value = e$title_size %||% 1.2, 
                          min = 0.5, max = 3.0, step = 0.1),
               tags$small(style="color:#777;", 
@@ -67,7 +67,7 @@ text_pane_ui <- function(rv) {
           ),
           column(6,
             div(
-              sliderInput("ui_subtitle_size", "Subtitle multiplier", 
+              sliderInput("ui_subtitle_size", "Subtitle", 
                          value = e$subtitle_size %||% 1.0, 
                          min = 0.5, max = 2.5, step = 0.1),
               tags$small(style="color:#777;", 
@@ -81,7 +81,7 @@ text_pane_ui <- function(rv) {
         fluidRow(
           column(6,
             div(
-              sliderInput("ui_axis_title_size", "Axis title multiplier", 
+              sliderInput("ui_axis_title_size", "Axis title", 
                          value = e$axis_title_size %||% 1.0, 
                          min = 0.5, max = 2.5, step = 0.1),
               tags$small(style="color:#777;", 
@@ -91,7 +91,7 @@ text_pane_ui <- function(rv) {
           ),
           column(6,
             div(
-              sliderInput("ui_axis_text_size", "Axis text multiplier", 
+              sliderInput("ui_axis_text_size", "Axis text", 
                          value = e$axis_text_size %||% 0.8, 
                          min = 0.5, max = 2.0, step = 0.1),
               tags$small(style="color:#777;", 
@@ -105,7 +105,7 @@ text_pane_ui <- function(rv) {
         fluidRow(
           column(6,
             div(
-              sliderInput("ui_legend_title_size", "Legend title multiplier", 
+              sliderInput("ui_legend_title_size", "Legend title", 
                          value = e$legend_title_size %||% 1.0, 
                          min = 0.5, max = 2.5, step = 0.1),
               tags$small(style="color:#777;", 
@@ -115,7 +115,7 @@ text_pane_ui <- function(rv) {
           ),
           column(6,
             div(
-              sliderInput("ui_legend_text_size", "Legend text multiplier", 
+              sliderInput("ui_legend_text_size", "Legend text", 
                          value = e$legend_text_size %||% 0.8, 
                          min = 0.5, max = 2.0, step = 0.1),
               tags$small(style="color:#777;", 
@@ -129,7 +129,7 @@ text_pane_ui <- function(rv) {
         fluidRow(
           column(6, offset = 3,
             div(
-              sliderInput("ui_caption_size", "Caption multiplier", 
+              sliderInput("ui_caption_size", "Caption", 
                          value = e$caption_size %||% 0.8, 
                          min = 0.5, max = 2.0, step = 0.1),
               tags$small(style="color:#777;", 
