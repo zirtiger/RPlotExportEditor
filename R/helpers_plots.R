@@ -744,17 +744,10 @@ get_first_new_plot <- function(rv, previous_count) {
 load_plot_settings <- function(rv, plot_index) {
 	index_str <- as.character(plot_index)
 	
-	# If we don't have edits for this plot yet, initialize them
+	# If we don't have edits for this plot yet, initialize them as empty
+	# DO NOT copy originals to edits - edits should only contain user modifications
 	if (is.null(rv$edits[[index_str]]) || length(rv$edits[[index_str]]) == 0) {
-		# Copy originals to edits, filling in BASE defaults for missing required settings
 		rv$edits[[index_str]] <- list()
-		
-		# Get all possible settings from originals
-		orig_settings <- rv$originals[[index_str]]
-		if (!is.null(orig_settings)) {
-			for (setting_name in names(orig_settings)) {
-				rv$edits[[index_str]][[setting_name]] <- orig_settings[[setting_name]]
-			}
-		}
+		# The UI will get values from originals when edits are empty
 	}
 }

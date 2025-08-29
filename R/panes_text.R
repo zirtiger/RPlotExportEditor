@@ -17,11 +17,10 @@ text_pane_ui <- function(rv) {
   cat("DEBUG: text_pane_ui - active_tab:", ap, "type:", typeof(ap), "\n")
   cat("DEBUG: text_pane_ui - plots available:", paste(names(rv$plots), collapse=", "), "\n")
   
-  ensure_edits(rv, ap, grid = FALSE)
   e <- rv$edits[[ap]]
   p <- rv$plots[[ap]]
   
-  cat("DEBUG: text_pane_ui - after ensure_edits, edits for", ap, ":", if(is.null(e)) "NULL" else paste(names(e), collapse=", "), "\n")
+  cat("DEBUG: text_pane_ui - edits for", ap, ":", if(is.null(e)) "NULL" else paste(names(e), collapse=", "), "\n")
   
   get_lab <- function(lbl) {
     val <- tryCatch(p$labels[[lbl]], error = function(...) NULL)

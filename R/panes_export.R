@@ -49,7 +49,6 @@ export_pane_ui <- function(rv) {
     return(tagList(h4("Export"), helpText("Select a plot tab to configure export settings.")))
   }
   
-  ensure_edits(rv, ap, grid = FALSE)
   ex <- rv$export[[ap]]
   
   tagList(
