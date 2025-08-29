@@ -81,6 +81,29 @@ ensure_edits <- function(rv, plot_name, grid = FALSE) {
   }
 }
 
+# Get current value for a setting, with fallback to original and then default
+get_current_value <- function(rv, plot_name, setting, default = NULL) {
+  if (is.null(plot_name) || is.null(rv$plots[[plot_name]])) return(default)
+  
+  plot_index <- which(names(rv$plots) == plot_name)
+  if (length(plot_index) == 0) return(default)
+  
+  index_str <- as.character(plot_index)
+  
+  # Check edits first
+  if (!is.null(rv$edits[[index_str]]) && !is.null(rv$edits[[index_str]][[setting]])) {
+    return(rv$edits[[index_str]][[setting]])
+  }
+  
+  # Check originals next
+  if (!is.null(rv$originals[[index_str]]) && !is.null(rv$originals[[index_str]][[setting]])) {
+    return(rv$originals[[index_str]][[setting]])
+  }
+  
+  # Return default
+  return(default)
+}
+
 # Resize grid cells
 resize_cells <- function(rv, rows, cols) {
   if (is.null(rows) || is.null(cols)) return()
