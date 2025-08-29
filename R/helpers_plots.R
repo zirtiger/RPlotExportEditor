@@ -347,6 +347,8 @@ add_plot <- function(rv, plot_obj, plot_name = NULL) {
 	}
 	rv$plot_names[[as.character(index)]] <- plot_name
 	
+	cat("DEBUG: Adding plot", index, ":", plot_name, "\n")
+	
 	# Extract and store all original settings
 	extract_plot_settings(rv, index, plot_obj)
 	
@@ -713,6 +715,8 @@ extract_base_size <- function(plot_obj) {
 	
 	# Store only what we extracted
 	rv$originals[[index_str]] <- extracted_settings
+	
+	cat("DEBUG: Completed extraction for plot", index_str, "with", length(extracted_settings), "settings\n")
 }
 
 # Get plot name for display
