@@ -326,7 +326,7 @@ app_server <- function(input, output, session) {
   register_preview_outputs(output, rv)
   register_grid_observers(input, rv, session)
   register_text_observers(input, rv, session)
-  register_theme_observers(input, rv, session)
+  	register_theme_observers(input, output, rv, session)
   register_export_observers(input, rv, session)
   
   # Observer for originals plot selector
