@@ -13,7 +13,7 @@ init_reactive_state <- function() {
     grid = list(
       rows = BASE$grid_rows,
       cols = BASE$grid_cols,
-      cells = list(),
+      cells = lapply(seq_len(BASE$grid_rows * BASE$grid_cols), function(i) "(empty)"),
       collect = BASE$grid_collect,
       legend = BASE$grid_legend_pos
     ),
@@ -90,6 +90,13 @@ resize_cells <- function(rv, rows, cols) {
   
   # Create or resize cells
   total_cells <- rows * cols
+  
+  # Initialize cells if they don't exist
+  if (is.null(rv$grid$cells) || length(rv$grid$cells) == 0) {
+    rv$grid$cells <- lapply(seq_len(total_cells), function(i) "(empty)")
+    return()
+  }
+  
   current_cells <- length(rv$grid$cells)
   
   if (total_cells > current_cells) {

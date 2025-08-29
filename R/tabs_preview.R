@@ -51,8 +51,13 @@ register_preview_outputs <- function(output, rv) {
     c <- rv$grid$cols %||% BASE$grid_cols
     idxs <- seq_len(r * c)
     
+    # Ensure cells exist
+    if (is.null(rv$grid$cells) || length(rv$grid$cells) == 0) {
+      rv$grid$cells <- lapply(idxs, function(k) "(empty)")
+    }
+    
     # Which plots are placed?
-    cells <- rv$grid$cells %||% list()
+    cells <- rv$grid$cells
     picked <- Filter(function(x) !is.null(x) && x != "(empty)" && x %in% names(rv$plots), cells)
     req(length(picked) > 0)
     
