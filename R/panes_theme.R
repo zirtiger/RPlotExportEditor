@@ -443,6 +443,8 @@ register_theme_observers <- function(input, rv, session) {
 		index_str <- as.character(plot_index)
 		e <- rv$edits[[index_str]]
 		
+
+		
 		# Simple observers that only update when there's a valid new color
 		if (!is.null(e$colour_levels) && length(e$colour_levels)) {
 			lapply(seq_along(e$colour_levels), function(i) {
