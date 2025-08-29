@@ -21,7 +21,8 @@ app_server <- function(input, output, session) {
       grid  = identical(active_tab, "Grid"),
       export= has_plots,
       text  = has_plots && !identical(active_tab, "Grid"),
-      theme = has_plots && !identical(active_tab, "Grid")
+      theme = has_plots && !identical(active_tab, "Grid"),
+      originals = has_plots
     )
   })
   
@@ -38,6 +39,8 @@ app_server <- function(input, output, session) {
       add_disabled(shinydashboard::menuItem("Text",   tabName = "text",   icon = icon("font")), ma$text),
       add_disabled(shinydashboard::menuItem("Theme",  tabName = "theme",  icon = icon("paint-brush")), ma$theme),
       hr(),
+      add_disabled(shinydashboard::menuItem("Original Settings", tabName = "originals", icon = icon("info-circle")), length(rv$plots) > 0),
+      hr(),
       fileInput("plots_rds", "Load ggplot (.rds, multiple)", accept = ".rds", multiple = TRUE),
       actionButton("load_demo", "Load 3 demo plots", class = "btn btn-link")
     )
@@ -50,7 +53,8 @@ app_server <- function(input, output, session) {
       if (!isTRUE(ma$export)) "export" else NULL,
       if (!isTRUE(ma$text))   "text"   else NULL,
       if (!isTRUE(ma$theme))  "theme"  else NULL,
-      if (!isTRUE(ma$grid))   "grid"   else NULL
+      if (!isTRUE(ma$grid))   "grid"   else NULL,
+      if (!isTRUE(ma$originals)) "originals" else NULL
     )
     if (!is.null(input$mainmenu) && input$mainmenu %in% blocked) {
       # choose best allowed target
@@ -270,12 +274,19 @@ app_server <- function(input, output, session) {
         helpText("Please load some plots first to access export options.")
       ))
     }
+    if (cur == "originals" && !activation$originals) {
+      return(div(
+        h4("Original Settings"),
+        helpText("Please load some plots first to view original settings.")
+      ))
+    }
     
     switch(cur,
-           grid   = grid_pane_ui(rv),
-           export = export_pane_ui(rv),
-           text   = text_pane_ui(rv),
-           theme  = theme_pane_ui(rv),
+           grid      = grid_pane_ui(rv),
+           export    = export_pane_ui(rv),
+           text      = text_pane_ui(rv),
+           theme     = theme_pane_ui(rv),
+           originals = originals_pane_ui(rv),
            div(helpText("Pick a section from the left."))
     )
   })
@@ -287,4 +298,12 @@ app_server <- function(input, output, session) {
   register_text_observers(input, rv, session)
   register_theme_observers(input, rv, session)
   register_export_observers(input, rv, session)
+  
+  # Observer for originals plot selector
+  observeEvent(input$originals_plot_selector, {
+    if (!is.null(input$originals_plot_selector)) {
+      # Update the active tab to the selected plot for context
+      rv$active_tab <- input$originals_plot_selector
+    }
+  }, ignoreInit = FALSE)
 }
