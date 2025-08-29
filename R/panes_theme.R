@@ -489,7 +489,11 @@ register_theme_observers <- function(input, output, rv, session) {
 				current_color <- e$colour_levels_cols[i] %||% "#1f77b4"
 				
 				output[[output_id]] <- renderUI({
-					make_color_input(output_id, "", current_color)
+					if (requireNamespace("colourpicker", quietly = TRUE)) {
+						colourpicker::colourInput(output_id, "", value = current_color, allowTransparent = TRUE)
+					} else {
+						textInput(output_id, "", value = current_color, placeholder = "#RRGGBB or name")
+					}
 				})
 			})
 		}
@@ -509,7 +513,11 @@ register_theme_observers <- function(input, output, rv, session) {
 				current_color <- e$fill_levels_cols[i] %||% "#1f77b4"
 				
 				output[[output_id]] <- renderUI({
-					make_color_input(output_id, "", current_color)
+					if (requireNamespace("colourpicker", quietly = TRUE)) {
+						colourpicker::colourInput(output_id, "", value = current_color, allowTransparent = TRUE)
+					} else {
+						textInput(output_id, "", value = current_color, placeholder = "#RRGGBB or name")
+					}
 				})
 			})
 		}
