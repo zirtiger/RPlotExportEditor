@@ -294,3 +294,325 @@ select_first_plot <- function(rv, session) {
     rv$active_tab <- first_name
   }
 }
+
+# Select plot by index (for new sequential system)
+select_plot_by_index <- function(rv, session, plot_index) {
+  index_str <- as.character(plot_index)
+  plot_name <- get_plot_display_name(rv, plot_index)
+  if (!is.null(plot_name)) {
+    updateTabsetPanel(session, "active_tabset", selected = plot_name)
+    rv$active_tab <- plot_name
+  }
+}
+
+# Add a new plot to the system
+add_plot <- function(rv, plot_obj, plot_name = NULL) {
+	index <- rv$next_plot_index
+	
+	# Store the plot at this index
+	rv$plots[[as.character(index)]] <- plot_obj
+	
+	# Store the display name
+	if (is.null(plot_name)) {
+		plot_name <- paste("Plot", index)
+	}
+	rv$plot_names[[as.character(index)]] <- plot_name
+	
+	# Extract and store all original settings
+	extract_plot_settings(rv, index, plot_obj)
+	
+	# Initialize empty edits for this plot
+	rv$edits[[as.character(index)]] <- list()
+	
+	# Initialize export settings
+	rv$export[[as.character(index)]] <- list(
+		width_mm  = BASE$width_mm,
+		height_mm = BASE$height_mm,
+		dpi       = BASE$dpi,
+		format    = BASE$format
+	)
+	
+	# Increment for next plot
+	rv$next_plot_index <- rv$next_plot_index + 1
+	
+	# Return the index for this plot
+	return(index)
+}
+
+# Extract all possible settings from a plot
+extract_plot_settings <- function(rv, index, plot_obj) {
+	index_str <- as.character(index)
+	
+	# Helper functions
+	get_theme_elem <- function(elem) {
+		tryCatch(plot_obj$theme[[elem]], error = function(...) NULL)
+	}
+	is_blank <- function(x) inherits(x, "element_blank")
+	
+	# Extract labels
+	get_lab <- function(lbl) {
+		v <- tryCatch(plot_obj$labels[[lbl]], error = function(...) NULL)
+		if (is.null(v)) "" else as.character(v)
+	}
+	
+	# Extract axis limits and suggested steps
+	x_info <- list(min = NULL, max = NULL, step_major = NULL, step_minor = NULL)
+	y_info <- list(min = NULL, max = NULL, step_major = NULL, step_minor = NULL)
+	
+	# Extract axis limits and suggest steps
+	if (requireNamespace("scales", quietly = TRUE)) {
+		tryCatch({
+			built <- ggplot2::ggplot_build(plot_obj)
+			if (!is.null(built$layout$panel_scales_x) && length(built$layout$panel_scales_x) > 0) {
+				sx <- built$layout$panel_scales_x[[1]]$range$range
+				if (length(sx) >= 2) {
+					x_info$min <- sx[1]; x_info$max <- sx[2]
+				}
+			}
+			if (!is.null(built$layout$panel_scales_y) && length(built$layout$panel_scales_y) > 0) {
+				sy <- built$layout$panel_scales_y[[1]]$range$range
+				if (length(sy) >= 2) {
+					y_info$min <- sy[1]; y_info$max <- sy[2]
+				}
+			}
+		}, error = function(e) NULL)
+	}
+	
+	# Theme-derived defaults
+	maj_el <- get_theme_elem("panel.grid.major")
+	min_el <- get_theme_elem("panel.grid.minor")
+	lbox   <- get_theme_elem("legend.box.background")
+	
+	# Helper function to extract levels from plot
+	extract_levels_from_plot <- function(p, aes_name) {
+		if (!requireNamespace("rlang", quietly = TRUE)) return(list(levels = character(0), colors = character(0)))
+		
+		collect <- character(0)
+		alt_aes <- if (identical(aes_name, "colour")) "color" else aes_name
+		get_expr <- function(mapping) {
+			if (is.null(mapping)) return(NULL)
+			if (!is.null(mapping[[aes_name]])) return(mapping[[aes_name]])
+			if (!is.null(mapping[[alt_aes]])) return(mapping[[alt_aes]])
+			NULL
+		}
+		
+		eval_on <- function(dat, expr) {
+			if (is.null(expr) || is.null(dat)) return(NULL)
+			if (!is.data.frame(dat) || nrow(dat) == 0) return(NULL)
+			vals <- try(rlang::eval_tidy(expr, data = dat), silent = TRUE)
+			if (inherits(vals, "try-error") || is.null(vals)) return(NULL)
+			vals
+		}
+		
+		append_vals <- function(vals) {
+			if (is.null(vals)) return()
+			vals <- vals[!is.na(vals)]
+			if (is.factor(vals)) collect <<- c(collect, as.character(levels(vals))) else collect <<- c(collect, unique(as.character(vals)))
+		}
+		
+		expr_p <- get_expr(p$mapping)
+		append_vals(eval_on(p$data, expr_p))
+		if (!is.null(p$layers) && length(p$layers)) {
+			for (ly in p$layers) {
+				expr_l <- get_expr(ly$mapping) %||% expr_p
+				append_vals(eval_on(ly$data %||% p$data, expr_l))
+			}
+		}
+		levels <- unique(collect[nzchar(collect)])
+		
+		# Extract actual colors from the plot
+		colors <- character(0)
+		if (length(levels) > 0) {
+			# Try to get colors from ggplot_build
+			tryCatch({
+				built <- ggplot2::ggplot_build(p)
+				if (!is.null(built$data) && length(built$data) > 0) {
+					# Look for the aesthetic in the built data
+					for (layer_data in built$data) {
+						if (is.data.frame(layer_data) && nrow(layer_data) > 0) {
+							# Check if this layer has the aesthetic
+							if (aes_name %in% names(layer_data) || alt_aes %in% names(layer_data)) {
+								aes_col <- layer_data[[aes_name]] %||% layer_data[[alt_aes]]
+								if (!is.null(aes_col)) {
+									# Get unique values and their corresponding colors
+									unique_vals <- unique(aes_col)
+									if (length(unique_vals) == length(levels)) {
+										# Try to extract colors from the layer's geom
+										colors <- tryCatch({
+											# For most geoms, the color is in the data
+											as.character(unique_vals)
+										}, error = function(e) character(0))
+										break
+									}
+								}
+							}
+						}
+					}
+				}
+			}, error = function(e) {
+				# If ggplot_build fails, try a different approach
+			})
+			
+			# If we couldn't extract colors, try to get them from the plot's scales
+			if (length(colors) == 0) {
+				tryCatch({
+					# Check if there's a manual scale
+					if (aes_name == "colour" || aes_name == "color") {
+						if (!is.null(p$scales$scales)) {
+							for (scale in p$scales$scales) {
+								if (scale$aesthetics == "colour" || scale$aesthetics == "color") {
+									if (inherits(scale, "ScaleDiscrete")) {
+										colors <- as.character(scale$palette(scale$range$range))
+										break
+									}
+								}
+							}
+						}
+					} else if (aes_name == "fill") {
+						if (!is.null(p$scales$scales)) {
+							for (scale in p$scales$scales) {
+								if (scale$aesthetics == "fill") {
+									if (inherits(scale, "ScaleDiscrete")) {
+										colors <- as.character(scale$palette(scale$range$range))
+										break
+									}
+								}
+							}
+						}
+					}
+				}, error = function(e) {
+					# If scale extraction fails, fall back to default colors
+				})
+			}
+			
+			# If we still don't have colors, use default viridis
+			if (length(colors) == 0 || length(colors) != length(levels)) {
+				colors <- if (requireNamespace("viridisLite", quietly = TRUE)) viridisLite::viridis(length(levels)) else grDevices::rainbow(length(levels))
+			}
+		}
+		
+		list(levels = levels, colors = colors)
+	}
+	
+	# Check for continuous color scales
+	continuous_colour_palette <- NULL
+	continuous_fill_palette <- NULL
+	
+	for (scale in plot_obj$scales$scales) {
+		if (inherits(scale, "ScaleContinuous")) {
+			if (identical(scale$aesthetics, "colour") || identical(scale$aesthetics, "color")) {
+				continuous_colour_palette <- "viridis"  # Default for continuous
+			} else if (identical(scale$aesthetics, "fill")) {
+				continuous_fill_palette <- "viridis"  # Default for continuous
+			}
+		}
+	}
+	
+	# Extract discrete levels only if no continuous scales
+	colour_result <- if (is.null(continuous_colour_palette)) {
+		extract_levels_from_plot(plot_obj, "colour")
+	} else {
+		list(levels = character(0), colors = character(0))
+	}
+	
+	fill_result <- if (is.null(continuous_fill_palette)) {
+		extract_levels_from_plot(plot_obj, "fill")
+	} else {
+		list(levels = character(0), colors = character(0))
+	}
+	
+	# Store ALL original values
+	rv$originals[[index_str]] <- list(
+		# Labels
+		title      = get_lab("title"),
+		subtitle   = get_lab("subtitle"),
+		caption    = get_lab("caption"),
+		xlab       = get_lab("x"),
+		ylab       = get_lab("y"),
+		
+		# Theme - use BASE defaults for essential settings
+		theme      = BASE$theme,
+		base_size  = BASE$base_size,
+		legend_pos = BASE$legend_pos,
+		legend_box = if (!is.null(lbox)) !is_blank(lbox) else NULL,
+		panel_bg   = NULL,  # Optional setting
+		plot_bg    = NULL,  # Optional setting
+		
+		# Grid - use BASE defaults for essential settings
+		grid_major = if (!is.null(maj_el)) !is_blank(maj_el) else FALSE,
+		grid_minor = if (!is.null(min_el)) !is_blank(min_el) else FALSE,
+		grid_major_linetype = if (!is.null(maj_el)) tryCatch(maj_el$linetype, error = function(...) "solid") else "solid",
+		grid_minor_linetype = if (!is.null(min_el)) tryCatch(min_el$linetype, error = function(...) "dashed") else "dashed",
+		grid_color = NULL,  # Optional setting
+		
+		# Axis limits - only set if actually present in plot
+		x_min      = x_info$min,
+		x_max      = x_info$max,
+		y_min      = y_info$min,
+		y_max      = y_info$max,
+		
+		# Step suggestions - use BASE defaults if not present in plot
+		x_step_major = x_info$step_major %||% 1,
+		x_step_minor = x_info$step_minor %||% 0.5,
+		y_step_major = y_info$step_major %||% 1,
+		y_step_minor = y_info$step_minor %||% 0.5,
+		
+		# Colors - include extracted results
+		palette = "None",
+		continuous_colour_palette = continuous_colour_palette,
+		continuous_fill_palette = continuous_fill_palette,
+		colour_levels = colour_result$levels,
+		colour_levels_cols = colour_result$colors,
+		fill_levels = fill_result$levels,
+		fill_levels_cols = fill_result$colors,
+		
+		# Text sizes - use BASE defaults for essential settings
+		title_size = BASE$title_size,
+		subtitle_size = BASE$subtitle_size,
+		caption_size = BASE$caption_size,
+		axis_title_size = BASE$axis_title_size,
+		axis_text_size = BASE$axis_text_size,
+		legend_title_size = BASE$legend_title_size,
+		legend_text_size = BASE$legend_text_size
+	)
+}
+
+# Get plot name for display
+get_plot_display_name <- function(rv, plot_index) {
+	index_str <- as.character(plot_index)
+	rv$plot_names[[index_str]] %||% paste("Plot", plot_index)
+}
+
+# Get all plot indices in order
+get_plot_indices <- function(rv) {
+	as.numeric(names(rv$plots))
+}
+
+# Get the first of the newly uploaded plots (for selection after upload)
+get_first_new_plot <- function(rv, previous_count) {
+	current_count <- length(rv$plots)
+	if (current_count > previous_count) {
+		# Return the first of the newly uploaded plots
+		return(previous_count + 1)
+	}
+	return(NULL)
+}
+
+# Load settings for a plot into the UI (creates edits if needed)
+load_plot_settings <- function(rv, plot_index) {
+	index_str <- as.character(plot_index)
+	
+	# If we don't have edits for this plot yet, initialize them
+	if (is.null(rv$edits[[index_str]]) || length(rv$edits[[index_str]]) == 0) {
+		# Copy originals to edits, filling in BASE defaults for missing required settings
+		rv$edits[[index_str]] <- list()
+		
+		# Get all possible settings from originals
+		orig_settings <- rv$originals[[index_str]]
+		if (!is.null(orig_settings)) {
+			for (setting_name in names(orig_settings)) {
+				rv$edits[[index_str]][[setting_name]] <- orig_settings[[setting_name]]
+			}
+		}
+	}
+}

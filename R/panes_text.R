@@ -101,18 +101,26 @@ text_pane_ui <- function(rv) {
 
 register_text_observers <- function(input, rv, session) {
   bind_edit <- function(input_id, field) {
+    # Use onBlur to only update when focus is lost
     observeEvent(input[[input_id]], {
       if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
       ap <- rv$active_tab
-      if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+      if (is.null(ap) || identical(ap, "Grid")) return()
       
-      if (identical(ap, "Grid")) {
-        # In grid context, no direct target — user should switch to a plot tab to edit that plot's text
-        return()
-      } else {
-        ensure_edits(rv, ap, grid = FALSE)
-        rv$edits[[ap]][[field]] <- input[[input_id]]
+      # Find the plot index for the active tab
+      plot_index <- NULL
+      for (index in get_plot_indices(rv)) {
+        if (get_plot_display_name(rv, index) == ap) {
+          plot_index <- index
+          break
+        }
       }
+      
+      if (is.null(plot_index)) return()
+      
+      # Load settings for this plot if needed
+      load_plot_settings(rv, plot_index)
+      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
   
@@ -151,16 +159,37 @@ register_text_observers <- function(input, rv, session) {
   
   observeEvent(input$apply_all_text, {
     ap <- rv$active_tab
-    if (is.null(ap) || identical(ap, "Grid") || is.null(rv$plots[[ap]])) return()
-    ensure_edits(rv, ap, grid = FALSE)
-    src <- rv$edits[[ap]]
+    if (is.null(ap) || identical(ap, "Grid")) return()
+    
+    # Find the plot index for the active tab
+    plot_index <- NULL
+    for (index in get_plot_indices(rv)) {
+      if (get_plot_display_name(rv, index) == ap) {
+        plot_index <- index
+        break
+      }
+    }
+    
+    if (is.null(plot_index)) return()
+    
+    # Load settings for this plot if needed
+    load_plot_settings(rv, plot_index)
+    src <- rv$edits[[as.character(plot_index)]]
+    
     text_fields <- c("title","subtitle","caption","xlab","ylab",
                      "title_size","subtitle_size","caption_size",
                      "axis_title_size","axis_text_size","legend_title_size","legend_text_size",
-                     "x_min","x_max","y_min","y_max","x_major","x_minor","y_major","y_minor")
-    for (nm in names(rv$plots)) {
-      ensure_edits(rv, nm, grid = FALSE)
-      rv$edits[[nm]][text_fields] <- src[text_fields]
+                     "x_min","x_max","y_min","y_max","x_step_major","x_step_minor","y_step_major","y_step_minor")
+    
+    # Apply to all plots
+    for (index in get_plot_indices(rv)) {
+      index_str <- as.character(index)
+      load_plot_settings(rv, index)
+      for (field in text_fields) {
+        if (!is.null(src[[field]])) {
+          rv$edits[[index_str]][[field]] <- src[[field]]
+        }
+      }
     }
     showNotification("Text settings applied to all plots.", type = "message")
   })
