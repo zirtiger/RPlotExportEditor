@@ -13,14 +13,21 @@ We've implemented a hybrid approach using:
 
 ## Implementation Details
 
-### 1. New Helper Functions (`R/helpers_debounce.R`)
+### 1. Simple Debouncing with `invalidateLater()`
 
 ```r
-# Debounced observeEvent wrapper
-debounced_observeEvent(eventExpr, handlerExpr, delay = 500, ...)
+# Text inputs (500ms debouncing)
+observeEvent(input$ui_title, {
+  invalidateLater(500)  # 500ms delay
+  # Do the actual work
+  rv$edits[[plot_index]]$title <- input$ui_title
+}, ignoreInit = TRUE, ignoreNULL = TRUE)
 
-# Throttled observeEvent wrapper  
-throttled_observeEvent(eventExpr, handlerExpr, delay = 200, ...)
+# Sliders (200ms throttling)
+observeEvent(input$ui_base_size, {
+  invalidateLater(200)  # 200ms delay
+  rv$edits[[plot_index]]$base_size <- input$ui_base_size
+}, ignoreInit = TRUE, ignoreNULL = TRUE)
 ```
 
 ### 2. Input Type Categorization
@@ -49,12 +56,10 @@ throttled_observeEvent(eventExpr, handlerExpr, delay = 200, ...)
 
 ### 3. Files Modified
 
-- `R/helpers_debounce.R` - New utility functions
 - `R/panes_text.R` - Text inputs and sliders
 - `R/panes_theme.R` - Theme controls
 - `R/panes_export.R` - Export settings
 - `R/panes_grid.R` - Grid layout
-- `app.R` - Added helper file to source order
 
 ## Benefits
 
@@ -63,36 +68,45 @@ throttled_observeEvent(eventExpr, handlerExpr, delay = 200, ...)
 3. **Immediate Selections**: Dropdowns and checkboxes remain instant
 4. **No UI Changes**: Existing interface remains the same
 5. **Performance**: Reduces unnecessary plot re-renders
+6. **Standard Shiny**: Uses `invalidateLater()` which is available in all Shiny versions
+
+## How It Works
+
+The `invalidateLater(500)` function tells Shiny to wait 500ms before executing the rest of the code in the `observeEvent`. This creates a simple but effective debouncing effect:
+
+1. User types in input
+2. `observeEvent` triggers immediately
+3. `invalidateLater(500)` delays execution by 500ms
+4. If user types again within 500ms, the previous execution is cancelled
+5. After 500ms of no input, the plot update executes
 
 ## Usage Examples
 
-### Before (Immediate Updates)
+### Text Input with Debouncing
 ```r
 observeEvent(input$ui_title, {
-  # Plot updates immediately on every keystroke
+  invalidateLater(500)  # Wait 500ms after typing stops
+  
+  # Get plot index and update
+  plot_index <- get_plot_index()
   rv$edits[[plot_index]]$title <- input$ui_title
 }, ignoreInit = TRUE, ignoreNULL = TRUE)
 ```
 
-### After (Debounced Updates)
-```r
-debounced_observeEvent(input$ui_title, {
-  # Plot updates 500ms after user stops typing
-  rv$edits[[plot_index]]$title <- input$ui_title
-}, delay = 500, ignoreInit = TRUE, ignoreNULL = TRUE)
-```
-
 ### Slider with Throttling
 ```r
-throttled_observeEvent(input$ui_base_size, {
-  # Plot updates every 200ms while dragging
+observeEvent(input$ui_base_size, {
+  invalidateLater(200)  # Wait 200ms between updates
+  
+  # Get plot index and update
+  plot_index <- get_plot_index()
   rv$edits[[plot_index]]$base_size <- input$ui_base_size
-}, delay = 200, ignoreInit = TRUE, ignoreNULL = TRUE)
+}, ignoreInit = TRUE, ignoreNULL = TRUE)
 ```
 
 ## Configuration
 
-You can adjust the delay times by modifying the `delay` parameter:
+You can adjust the delay times by modifying the `invalidateLater()` parameter:
 
 - **Text inputs**: 500ms (good balance between responsiveness and smoothness)
 - **Sliders**: 200ms (responsive but not excessive)
@@ -103,7 +117,7 @@ You can adjust the delay times by modifying the `delay` parameter:
 To test the implementation:
 
 1. Type in a text input - plot should update 500ms after you stop typing
-2. Drag a slider - plot should update every 200ms while dragging
+2. Drag a slider - plot should update after 200ms delay
 3. Select from a dropdown - plot should update immediately
 4. Check/uncheck a checkbox - plot should update immediately
 
@@ -111,16 +125,15 @@ To test the implementation:
 
 If you experience issues:
 
-1. Check that `R/helpers_debounce.R` is properly sourced
+1. Check that all files are properly sourced
 2. Verify the delay parameters are appropriate for your use case
-3. Ensure the helper functions are available in your environment
-4. Check console for any error messages
+3. Check console for any error messages
+4. Ensure `invalidateLater()` is available in your Shiny version
 
-## Future Enhancements
+## Why This Approach Works
 
-Potential improvements could include:
-
-- User-configurable delay times
-- Different delays for different input types
-- Visual feedback during debouncing/throttling
-- Integration with Shiny's built-in debouncing features
+1. **Uses Standard Shiny Functions**: `invalidateLater()` is built into Shiny
+2. **Simple and Reliable**: No complex custom debouncing logic
+3. **Easy to Debug**: Clear flow of execution
+4. **No External Dependencies**: Works with standard Shiny installations
+5. **Proven Method**: This is how most Shiny apps handle input delays

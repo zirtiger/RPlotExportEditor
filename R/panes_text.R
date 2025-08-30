@@ -171,30 +171,31 @@ text_pane_ui <- function(rv) {
 
 register_text_observers <- function(input, rv, session) {
   bind_edit <- function(input_id, field) {
-    # Simple debouncing: just use observeEvent with a small delay
+    # Simple debouncing: use invalidateLater for delayed updates
     observeEvent(input[[input_id]], {
       cat("DEBUG: Input changed for", input_id, "=", input[[input_id]], "\n")
       
-      # Add a small delay to prevent immediate updates
-      later({
-        if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
-        ap <- rv$active_tab
-        if (is.null(ap) || identical(ap, "Grid")) return()
-        
-        # The active tab is now the plot index (1, 2, 3, etc.)
-        # Just use it directly if it's a valid plot index
-        plot_index <- NULL
-        if (ap %in% names(rv$plots)) {
-          plot_index <- as.numeric(ap)
-        }
-        
-        if (is.null(plot_index)) return()
-        
-        # Load settings for this plot if needed
-        load_plot_settings(rv, plot_index)
-        rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
-        cat("DEBUG: Updated", field, "to", input[[input_id]], "for plot", plot_index, "\n")
-      }, delay = 0.5)  # 500ms delay
+      # Use invalidateLater to delay the update
+      invalidateLater(500)  # 500ms delay
+      
+      # Do the actual work
+      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+      ap <- rv$active_tab
+      if (is.null(ap) || identical(ap, "Grid")) return()
+      
+      # The active tab is now the plot index (1, 2, 3, etc.)
+      # Just use it directly if it's a valid plot index
+      plot_index <- NULL
+      if (ap %in% names(rv$plots)) {
+        plot_index <- as.numeric(ap)
+      }
+      
+      if (is.null(plot_index)) return()
+      
+      # Load settings for this plot if needed
+      load_plot_settings(rv, plot_index)
+      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
+      cat("DEBUG: Updated", field, "to", input[[input_id]], "for plot", plot_index, "\n")
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
   
@@ -237,23 +238,24 @@ register_text_observers <- function(input, rv, session) {
     observeEvent(input[[input_id]], {
       cat("DEBUG: Numeric input changed for", input_id, "=", input[[input_id]], "\n")
       
-      # Add a small delay to prevent immediate updates
-      later({
-        if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
-        ap <- rv$active_tab
-        if (is.null(ap) || identical(ap, "Grid")) return()
-        
-        plot_index <- NULL
-        if (ap %in% names(rv$plots)) {
-          plot_index <- as.numeric(ap)
-        }
-        
-        if (is.null(plot_index)) return()
-        
-        load_plot_settings(rv, plot_index)
-        rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
-        cat("DEBUG: Updated numeric", field, "to", input[[input_id]], "for plot", plot_index, "\n")
-      }, delay = 0.5)  # 500ms delay
+      # Use invalidateLater to delay the update
+      invalidateLater(500)  # 500ms delay
+      
+      # Do the actual work
+      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+      ap <- rv$active_tab
+      if (is.null(ap) || identical(ap, "Grid")) return()
+      
+      plot_index <- NULL
+      if (ap %in% names(rv$plots)) {
+        plot_index <- as.numeric(ap)
+      }
+      
+      if (is.null(plot_index)) return()
+      
+      load_plot_settings(rv, plot_index)
+      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
+      cat("DEBUG: Updated numeric", field, "to", input[[input_id]], "for plot", plot_index, "\n")
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
   

@@ -59,18 +59,16 @@ register_grid_observers <- function(input, rv, session) {
   # Layout changes - numeric inputs use debouncing for smooth typing
   # Rows input
   observeEvent(input$ui_grid_rows, {
-    later({
-      rows <- as_num_safe(input$ui_grid_rows) %||% BASE$grid_rows
-      resize_cells(rv, rows, rv$grid$cols %||% BASE$grid_cols)
-    }, delay = 0.5)  # 500ms delay
+    invalidateLater(500)  # 500ms delay
+    rows <- as_num_safe(input$ui_grid_rows) %||% BASE$grid_rows
+    resize_cells(rv, rows, rv$grid$cols %||% BASE$grid_cols)
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Columns input
   observeEvent(input$ui_grid_cols, {
-    later({
-      cols <- as_num_safe(input$ui_grid_cols) %||% BASE$grid_cols
-      resize_cells(rv, rv$grid$rows %||% BASE$grid_rows, cols)
-    }, delay = 0.5)  # 500ms delay
+    invalidateLater(500)  # 500ms delay
+    cols <- as_num_safe(input$ui_grid_cols) %||% BASE$grid_cols
+    resize_cells(rv, rv$grid$rows %||% BASE$grid_rows, cols)
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   observeEvent(input$ui_grid_collect, {
