@@ -93,15 +93,44 @@ export_pane_ui <- function(rv) {
 }
 
 register_export_observers <- function(input, rv, session) {
-  # Grid export writers
+  # Grid export writers - sliders use proper debouncing
+  # Width slider
+  timer_w <- reactiveTimer(200)
+  should_execute_w <- reactiveVal(FALSE)
+  last_value_w <- reactiveVal(NULL)
+  
   observeEvent(input$ui_gridexp_w, { 
-    rv$grid_export$width_mm <- as_num_safe(input$ui_gridexp_w) 
+    last_value_w(input$ui_gridexp_w)
+    should_execute_w(TRUE)
+    timer_w()
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  
+  observeEvent(timer_w(), {
+    if (should_execute_w()) {
+      rv$grid_export$width_mm <- as_num_safe(last_value_w())
+      should_execute_w(FALSE)
+    }
+  })
+  
+  # Height slider
+  timer_h <- reactiveTimer(200)
+  should_execute_h <- reactiveVal(FALSE)
+  last_value_h <- reactiveVal(NULL)
   
   observeEvent(input$ui_gridexp_h, { 
-    rv$grid_export$height_mm <- as_num_safe(input$ui_gridexp_h) 
+    last_value_h(input$ui_gridexp_h)
+    should_execute_h(TRUE)
+    timer_h()
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
+  observeEvent(timer_h(), {
+    if (should_execute_h()) {
+      rv$grid_export$height_mm <- as_num_safe(last_value_h())
+      should_execute_h(FALSE)
+    }
+  })
+  
+  # Dropdowns - keep immediate updates
   observeEvent(input$ui_gridexp_d, {
     if (input$ui_gridexp_d == "custom") {
       rv$grid_export$dpi <- as_num_safe(input$ui_gridexp_d_custom)
@@ -110,29 +139,72 @@ register_export_observers <- function(input, rv, session) {
     }
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
+  # Custom DPI slider
+  timer_d_custom <- reactiveTimer(200)
+  should_execute_d_custom <- reactiveVal(FALSE)
+  last_value_d_custom <- reactiveVal(NULL)
+  
   observeEvent(input$ui_gridexp_d_custom, {
-    if (input$ui_gridexp_d == "custom") {
-      rv$grid_export$dpi <- as_num_safe(input$ui_gridexp_d_custom)
-    }
+    last_value_d_custom(input$ui_gridexp_d_custom)
+    should_execute_d_custom(TRUE)
+    timer_d_custom()
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  
+  observeEvent(timer_d_custom(), {
+    if (should_execute_d_custom()) {
+      if (input$ui_gridexp_d == "custom") {
+        rv$grid_export$dpi <- as_num_safe(last_value_d_custom())
+      }
+      should_execute_d_custom(FALSE)
+    }
+  })
   
   observeEvent(input$ui_gridexp_f, {
     rv$grid_export$format <- input$ui_gridexp_f
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
-  # Per-plot export writers
+  # Per-plot export writers - sliders use proper debouncing
+  # Width slider
+  timer_exp_w <- reactiveTimer(200)
+  should_execute_exp_w <- reactiveVal(FALSE)
+  last_value_exp_w <- reactiveVal(NULL)
+  
   observeEvent(input$ui_exp_width, {
-    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
-    ensure_edits(rv, ap, grid = FALSE)
-    rv$export[[ap]]$width_mm <- as_num_safe(input$ui_exp_width)
+    last_value_exp_w(input$ui_exp_width)
+    should_execute_exp_w(TRUE)
+    timer_exp_w()
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  
+  observeEvent(timer_exp_w(), {
+    if (should_execute_exp_w()) {
+      ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+      ensure_edits(rv, ap, grid = FALSE)
+      rv$export[[ap]]$width_mm <- as_num_safe(last_value_exp_w())
+      should_execute_exp_w(FALSE)
+    }
+  })
+  
+  # Height slider
+  timer_exp_h <- reactiveTimer(200)
+  should_execute_exp_h <- reactiveVal(FALSE)
+  last_value_exp_h <- reactiveVal(NULL)
   
   observeEvent(input$ui_exp_height, {
-    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
-    ensure_edits(rv, ap, grid = FALSE)
-    rv$export[[ap]]$height_mm <- as_num_safe(input$ui_exp_height)
+    last_value_exp_h(input$ui_exp_height)
+    should_execute_exp_h(TRUE)
+    timer_exp_h()
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
+  observeEvent(timer_exp_h(), {
+    if (should_execute_exp_h()) {
+      ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+      ensure_edits(rv, ap, grid = FALSE)
+      rv$export[[ap]]$height_mm <- as_num_safe(last_value_exp_h())
+      should_execute_exp_h(FALSE)
+    }
+  })
+  
+  # Dropdowns - keep immediate updates
   observeEvent(input$ui_exp_dpi, {
     ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
@@ -143,13 +215,27 @@ register_export_observers <- function(input, rv, session) {
     }
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
+  # Custom DPI slider for per-plot export
+  timer_exp_dpi_custom <- reactiveTimer(200)
+  should_execute_exp_dpi_custom <- reactiveVal(FALSE)
+  last_value_exp_dpi_custom <- reactiveVal(NULL)
+  
   observeEvent(input$ui_exp_dpi_custom, {
-    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
-    ensure_edits(rv, ap, grid = FALSE)
-    if (input$ui_exp_dpi == "custom") {
-      rv$export[[ap]]$dpi <- as_num_safe(input$ui_exp_dpi_custom)
-    }
+    last_value_exp_dpi_custom(input$ui_exp_dpi_custom)
+    should_execute_exp_dpi_custom(TRUE)
+    timer_exp_dpi_custom()
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  
+  observeEvent(timer_exp_dpi_custom(), {
+    if (should_execute_exp_dpi_custom()) {
+      ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+      ensure_edits(rv, ap, grid = FALSE)
+      if (input$ui_exp_dpi == "custom") {
+        rv$export[[ap]]$dpi <- as_num_safe(last_value_exp_dpi_custom())
+      }
+      should_execute_exp_dpi_custom(FALSE)
+    }
+  })
   
   observeEvent(input$ui_exp_format, {
     ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()

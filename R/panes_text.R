@@ -171,25 +171,56 @@ text_pane_ui <- function(rv) {
 
 register_text_observers <- function(input, rv, session) {
   bind_edit <- function(input_id, field) {
-    # Use onBlur to only update when focus is lost
+    # Proper debouncing: create a timer that resets on each input
+    timer <- reactiveTimer(500)
+    should_execute <- reactiveVal(FALSE)
+    last_value <- reactiveVal(NULL)
+    
+    # Observe input changes and reset timer
     observeEvent(input[[input_id]], {
-      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
-      ap <- rv$active_tab
-      if (is.null(ap) || identical(ap, "Grid")) return()
+      cat("DEBUG: Input changed for", input_id, "=", input[[input_id]], "\n")
       
-      # The active tab is now the plot index (1, 2, 3, etc.)
-      # Just use it directly if it's a valid plot index
-      plot_index <- NULL
-      if (ap %in% names(rv$plots)) {
-        plot_index <- as.numeric(ap)
-      }
+      # Store the current value
+      last_value(input[[input_id]])
       
-      if (is.null(plot_index)) return()
+      # Mark that we should execute when timer fires
+      should_execute(TRUE)
       
-      # Load settings for this plot if needed
-      load_plot_settings(rv, plot_index)
-      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
+      # Reset the timer (this will fire in 500ms if no more input)
+      timer()
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
+    
+    # Execute when timer fires (only if we should execute)
+    observeEvent(timer(), {
+      if (should_execute()) {
+        cat("DEBUG: Timer fired, executing handler for", input_id, "\n")
+        
+        # Get the last value that was input
+        current_value <- last_value()
+        if (is.null(current_value)) return()
+        
+        if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+        ap <- rv$active_tab
+        if (is.null(ap) || identical(ap, "Grid")) return()
+        
+        # The active tab is now the plot index (1, 2, 3, etc.)
+        # Just use it directly if it's a valid plot index
+        plot_index <- NULL
+        if (ap %in% names(rv$plots)) {
+          plot_index <- as.numeric(ap)
+        }
+        
+        if (is.null(plot_index)) return()
+        
+        # Load settings for this plot if needed
+        load_plot_settings(rv, plot_index)
+        rv$edits[[as.character(plot_index)]][[field]] <- current_value
+        cat("DEBUG: Updated", field, "to", current_value, "for plot", plot_index, "\n")
+        
+        # Reset execution flag
+        should_execute(FALSE)
+      }
+    })
   }
   
   # Persist selected sub-tab
@@ -204,29 +235,111 @@ register_text_observers <- function(input, rv, session) {
   bind_edit("ui_xlab",     "xlab")
   bind_edit("ui_ylab",     "ylab")
   
-  # Base size (moved from theme)
-  bind_edit("ui_base_size", "base_size")
+  # Sliders - use throttling for responsive updates
+  bind_edit_slider <- function(input_id, field) {
+    # Proper throttling: only execute if enough time has passed
+    last_execution <- reactiveVal(0)
+    
+    observeEvent(input[[input_id]], {
+      cat("DEBUG: Slider changed for", input_id, "=", input[[input_id]], "\n")
+      
+      # Check if enough time has passed since last execution
+      now <- Sys.time()
+      if (as.numeric(now - last_execution()) * 1000 >= 200) {  # 200ms throttle
+        last_execution(now)
+        
+        if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+        ap <- rv$active_tab
+        if (is.null(ap) || identical(ap, "Grid")) return()
+        
+        plot_index <- NULL
+        if (ap %in% names(rv$plots)) {
+          plot_index <- as.numeric(ap)
+        }
+        
+        if (is.null(plot_index)) return()
+        
+        load_plot_settings(rv, plot_index)
+        rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
+        cat("DEBUG: Updated slider", field, "to", input[[input_id]], "for plot", plot_index, "\n")
+      }
+    }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  }
   
-  # Text sizes
-  bind_edit("ui_title_size", "title_size")
-  bind_edit("ui_subtitle_size", "subtitle_size")
-  bind_edit("ui_caption_size", "caption_size")
-  bind_edit("ui_axis_title_size", "axis_title_size")
-  bind_edit("ui_axis_text_size", "axis_text_size")
-  bind_edit("ui_legend_title_size", "legend_title_size")
-  bind_edit("ui_legend_text_size", "legend_text_size")
+  # Numeric inputs - use proper debouncing
+  bind_edit_numeric <- function(input_id, field) {
+    # Proper debouncing: create a timer that resets on each input
+    timer <- reactiveTimer(500)
+    should_execute <- reactiveVal(FALSE)
+    last_value <- reactiveVal(NULL)
+    
+    # Observe input changes and reset timer
+    observeEvent(input[[input_id]], {
+      cat("DEBUG: Numeric input changed for", input_id, "=", input[[input_id]], "\n")
+      
+      # Store the current value
+      last_value(input[[input_id]])
+      
+      # Mark that we should execute when timer fires
+      should_execute(TRUE)
+      
+      # Reset the timer (this will fire in 500ms if no more input)
+      timer()
+    }, ignoreInit = TRUE, ignoreNULL = TRUE)
+    
+    # Execute when timer fires (only if we should execute)
+    observeEvent(timer(), {
+      if (should_execute()) {
+        cat("DEBUG: Numeric timer fired, executing handler for", input_id, "\n")
+        
+        # Get the last value that was input
+        current_value <- last_value()
+        if (is.null(current_value)) return()
+        
+        if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+        ap <- rv$active_tab
+        if (is.null(ap) || identical(ap, "Grid")) return()
+        
+        plot_index <- NULL
+        if (ap %in% names(rv$plots)) {
+          plot_index <- as.numeric(ap)
+        }
+        
+        if (is.null(plot_index)) return()
+        
+        load_plot_settings(rv, plot_index)
+        rv$edits[[as.character(plot_index)]][[field]] <- current_value
+        cat("DEBUG: Updated numeric", field, "to", current_value, "for plot", plot_index, "\n")
+        
+        # Reset execution flag
+        should_execute(FALSE)
+      }
+    })
+  }
   
-  # Axis limits
-  bind_edit("ui_x_min", "x_min")
-  bind_edit("ui_x_max", "x_max")
-  bind_edit("ui_y_min", "y_min")
-  bind_edit("ui_y_max", "y_max")
+  # Base size (moved from theme) - slider
+  bind_edit_slider("ui_base_size", "base_size")
   
-  # Axis steps
-  bind_edit("ui_x_step_minor", "x_step_minor")
-  bind_edit("ui_x_step_major", "x_step_major")
-  bind_edit("ui_y_step_minor", "y_step_minor")
-  bind_edit("ui_y_step_major", "y_step_major")
+  # Text sizes - sliders
+  bind_edit_slider("ui_title_size", "title_size")
+  bind_edit_slider("ui_subtitle_size", "subtitle_size")
+  bind_edit_slider("ui_caption_size", "caption_size")
+  bind_edit_slider("ui_axis_title_size", "axis_title_size")
+  bind_edit_slider("ui_axis_text_size", "axis_text_size")
+  bind_edit_slider("ui_legend_title_size", "legend_title_size")
+  bind_edit_slider("ui_legend_text_size", "legend_text_size")
+  
+  # Axis limits - numeric inputs
+  bind_edit_numeric("ui_x_min", "x_min")
+  bind_edit_numeric("ui_x_max", "x_max")
+  bind_edit_numeric("ui_y_min", "y_min")
+  bind_edit_numeric("ui_y_max", "y_max")
+  
+  # Axis steps - numeric inputs
+  bind_edit_numeric("ui_x_step_minor", "x_step_minor")
+  bind_edit_numeric("ui_x_step_major", "x_step_major")
+  bind_edit_numeric("ui_y_step_minor", "y_step_minor")
+  bind_edit_numeric("ui_y_step_major", "y_step_major")
   
   observeEvent(input$apply_all_text, {
     ap <- rv$active_tab
