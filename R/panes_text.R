@@ -171,20 +171,12 @@ text_pane_ui <- function(rv) {
 
 register_text_observers <- function(input, rv, session) {
   bind_edit <- function(input_id, field) {
-    # Use simple debouncing with reactiveTimer for smooth typing experience
-    timer <- reactiveTimer(500)
-    should_execute <- reactiveVal(FALSE)
-    
-    # Observe input changes
+    # Simple debouncing: just use observeEvent with a small delay
     observeEvent(input[[input_id]], {
       cat("DEBUG: Input changed for", input_id, "=", input[[input_id]], "\n")
-      should_execute(TRUE)
-    }, ignoreInit = TRUE, ignoreNULL = TRUE)
-    
-    # Execute when timer fires
-    observeEvent(timer(), {
-      if (should_execute()) {
-        cat("DEBUG: Timer fired, executing handler for", input_id, "\n")
+      
+      # Add a small delay to prevent immediate updates
+      later({
         if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
         ap <- rv$active_tab
         if (is.null(ap) || identical(ap, "Grid")) return()
@@ -202,9 +194,8 @@ register_text_observers <- function(input, rv, session) {
         load_plot_settings(rv, plot_index)
         rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
         cat("DEBUG: Updated", field, "to", input[[input_id]], "for plot", plot_index, "\n")
-        should_execute(FALSE)
-      }
-    })
+      }, delay = 0.5)  # 500ms delay
+    }, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
   
   # Persist selected sub-tab
@@ -219,55 +210,35 @@ register_text_observers <- function(input, rv, session) {
   bind_edit("ui_xlab",     "xlab")
   bind_edit("ui_ylab",     "ylab")
   
-  # Sliders - use throttling for responsive updates (200ms delay)
+  # Sliders - use immediate updates for now to test
   bind_edit_slider <- function(input_id, field) {
-    # Use simple throttling with reactiveTimer
-    timer <- reactiveTimer(200)
-    should_execute <- reactiveVal(FALSE)
-    
-    # Observe input changes
     observeEvent(input[[input_id]], {
       cat("DEBUG: Slider changed for", input_id, "=", input[[input_id]], "\n")
-      should_execute(TRUE)
-    }, ignoreInit = TRUE, ignoreNULL = TRUE)
-    
-    # Execute when timer fires
-    observeEvent(timer(), {
-      if (should_execute()) {
-        cat("DEBUG: Slider timer fired, executing handler for", input_id, "\n")
-        if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
-        ap <- rv$active_tab
-        if (is.null(ap) || identical(ap, "Grid")) return()
-        
-        plot_index <- NULL
-        if (ap %in% names(rv$plots)) {
-          plot_index <- as.numeric(ap)
-        }
-        
-        if (is.null(plot_index)) return()
-        
-        load_plot_settings(rv, plot_index)
-        rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
-        cat("DEBUG: Updated slider", field, "to", input[[input_id]], "for plot", plot_index, "\n")
-        should_execute(FALSE)
+      
+      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+      ap <- rv$active_tab
+      if (is.null(ap) || identical(ap, "Grid")) return()
+      
+      plot_index <- NULL
+      if (ap %in% names(rv$plots)) {
+        plot_index <- as.numeric(ap)
       }
-    })
+      
+      if (is.null(plot_index)) return()
+      
+      load_plot_settings(rv, plot_index)
+      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
+      cat("DEBUG: Updated slider", field, "to", input[[input_id]], "for plot", plot_index, "\n")
+    }, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
   
-  # Numeric inputs - use debouncing for smooth typing (500ms delay)
+  # Numeric inputs - use debouncing for smooth typing
   bind_edit_numeric <- function(input_id, field) {
-    # Use simple debouncing with reactiveTimer
-    timer <- reactiveTimer(500)
-    should_execute <- reactiveVal(FALSE)
-    
-    # Observe input changes
     observeEvent(input[[input_id]], {
-      should_execute(TRUE)
-    }, ignoreInit = TRUE, ignoreNULL = TRUE)
-    
-    # Execute when timer fires
-    observeEvent(timer(), {
-      if (should_execute()) {
+      cat("DEBUG: Numeric input changed for", input_id, "=", input[[input_id]], "\n")
+      
+      # Add a small delay to prevent immediate updates
+      later({
         if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
         ap <- rv$active_tab
         if (is.null(ap) || identical(ap, "Grid")) return()
@@ -281,9 +252,9 @@ register_text_observers <- function(input, rv, session) {
         
         load_plot_settings(rv, plot_index)
         rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
-        should_execute(FALSE)
-      }
-    })
+        cat("DEBUG: Updated numeric", field, "to", input[[input_id]], "for plot", plot_index, "\n")
+      }, delay = 0.5)  # 500ms delay
+    }, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
   
   # Base size (moved from theme) - slider
