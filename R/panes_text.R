@@ -171,8 +171,8 @@ text_pane_ui <- function(rv) {
 
 register_text_observers <- function(input, rv, session) {
   bind_edit <- function(input_id, field) {
-    # Use onBlur to only update when focus is lost
-    observeEvent(input[[input_id]], {
+    # Use debouncing for smooth typing experience (500ms delay)
+    debounced_observeEvent(input[[input_id]], {
       if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
       ap <- rv$active_tab
       if (is.null(ap) || identical(ap, "Grid")) return()
@@ -189,7 +189,7 @@ register_text_observers <- function(input, rv, session) {
       # Load settings for this plot if needed
       load_plot_settings(rv, plot_index)
       rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
-    }, ignoreInit = TRUE, ignoreNULL = TRUE)
+    }, delay = 500, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
   
   # Persist selected sub-tab
@@ -204,29 +204,67 @@ register_text_observers <- function(input, rv, session) {
   bind_edit("ui_xlab",     "xlab")
   bind_edit("ui_ylab",     "ylab")
   
-  # Base size (moved from theme)
-  bind_edit("ui_base_size", "base_size")
+  # Sliders - use throttling for responsive updates (200ms delay)
+  bind_edit_slider <- function(input_id, field) {
+    throttled_observeEvent(input[[input_id]], {
+      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+      ap <- rv$active_tab
+      if (is.null(ap) || identical(ap, "Grid")) return()
+      
+      plot_index <- NULL
+      if (ap %in% names(rv$plots)) {
+        plot_index <- as.numeric(ap)
+      }
+      
+      if (is.null(plot_index)) return()
+      
+      load_plot_settings(rv, plot_index)
+      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
+    }, delay = 200, ignoreInit = TRUE, ignoreNULL = TRUE)
+  }
   
-  # Text sizes
-  bind_edit("ui_title_size", "title_size")
-  bind_edit("ui_subtitle_size", "subtitle_size")
-  bind_edit("ui_caption_size", "caption_size")
-  bind_edit("ui_axis_title_size", "axis_title_size")
-  bind_edit("ui_axis_text_size", "axis_text_size")
-  bind_edit("ui_legend_title_size", "legend_title_size")
-  bind_edit("ui_legend_text_size", "legend_text_size")
+  # Numeric inputs - use debouncing for smooth typing (500ms delay)
+  bind_edit_numeric <- function(input_id, field) {
+    debounced_observeEvent(input[[input_id]], {
+      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+      ap <- rv$active_tab
+      if (is.null(ap) || identical(ap, "Grid")) return()
+      
+      plot_index <- NULL
+      if (ap %in% names(rv$plots)) {
+        plot_index <- as.numeric(ap)
+      }
+      
+      if (is.null(plot_index)) return()
+      
+      load_plot_settings(rv, plot_index)
+      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
+    }, delay = 500, ignoreInit = TRUE, ignoreNULL = TRUE)
+  }
   
-  # Axis limits
-  bind_edit("ui_x_min", "x_min")
-  bind_edit("ui_x_max", "x_max")
-  bind_edit("ui_y_min", "y_min")
-  bind_edit("ui_y_max", "y_max")
+  # Base size (moved from theme) - slider
+  bind_edit_slider("ui_base_size", "base_size")
   
-  # Axis steps
-  bind_edit("ui_x_step_minor", "x_step_minor")
-  bind_edit("ui_x_step_major", "x_step_major")
-  bind_edit("ui_y_step_minor", "y_step_minor")
-  bind_edit("ui_y_step_major", "y_step_major")
+  # Text sizes - sliders
+  bind_edit_slider("ui_title_size", "title_size")
+  bind_edit_slider("ui_subtitle_size", "subtitle_size")
+  bind_edit_slider("ui_caption_size", "caption_size")
+  bind_edit_slider("ui_axis_title_size", "axis_title_size")
+  bind_edit_slider("ui_axis_text_size", "axis_text_size")
+  bind_edit_slider("ui_legend_title_size", "legend_title_size")
+  bind_edit_slider("ui_legend_text_size", "legend_text_size")
+  
+  # Axis limits - numeric inputs
+  bind_edit_numeric("ui_x_min", "x_min")
+  bind_edit_numeric("ui_x_max", "x_max")
+  bind_edit_numeric("ui_y_min", "y_min")
+  bind_edit_numeric("ui_y_max", "y_max")
+  
+  # Axis steps - numeric inputs
+  bind_edit_numeric("ui_x_step_minor", "x_step_minor")
+  bind_edit_numeric("ui_x_step_major", "x_step_major")
+  bind_edit_numeric("ui_y_step_minor", "y_step_minor")
+  bind_edit_numeric("ui_y_step_major", "y_step_major")
   
   observeEvent(input$apply_all_text, {
     ap <- rv$active_tab

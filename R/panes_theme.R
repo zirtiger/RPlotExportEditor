@@ -236,6 +236,7 @@ register_theme_observers <- function(input, rv, session) {
 	
 
 	
+	# Dropdowns - keep immediate updates (no debouncing needed)
 	observeEvent(input$ui_legend_pos, {
 		if (rv$is_hydrating || rv$force_ui_update > 0) return()
 		plot_index <- get_plot_index()
