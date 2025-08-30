@@ -57,15 +57,33 @@ grid_pane_ui <- function(rv) {
 # ---------- Observers ----------
 register_grid_observers <- function(input, rv, session) {
   # Layout changes - numeric inputs use debouncing for smooth typing
-  debounced_observeEvent(input$ui_grid_rows, {
-    rows <- as_num_safe(input$ui_grid_rows) %||% BASE$grid_rows
-    resize_cells(rv, rows, rv$grid$cols %||% BASE$grid_cols)
-  }, delay = 500, ignoreInit = TRUE, ignoreNULL = TRUE)
+  # Rows input
+  timer_rows <- reactiveTimer(500)
+  should_execute_rows <- reactiveVal(FALSE)
+  observeEvent(input$ui_grid_rows, {
+    should_execute_rows(TRUE)
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  observeEvent(timer_rows(), {
+    if (should_execute_rows()) {
+      rows <- as_num_safe(input$ui_grid_rows) %||% BASE$grid_rows
+      resize_cells(rv, rows, rv$grid$cols %||% BASE$grid_cols)
+      should_execute_rows(FALSE)
+    }
+  })
   
-  debounced_observeEvent(input$ui_grid_cols, {
-    cols <- as_num_safe(input$ui_grid_cols) %||% BASE$grid_cols
-    resize_cells(rv, rv$grid$rows %||% BASE$grid_rows, cols)
-  }, delay = 500, ignoreInit = TRUE, ignoreNULL = TRUE)
+  # Columns input
+  timer_cols <- reactiveTimer(500)
+  should_execute_cols <- reactiveVal(FALSE)
+  observeEvent(input$ui_grid_cols, {
+    should_execute_cols(TRUE)
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  observeEvent(timer_cols(), {
+    if (should_execute_cols()) {
+      cols <- as_num_safe(input$ui_grid_cols) %||% BASE$grid_cols
+      resize_cells(rv, rv$grid$rows %||% BASE$grid_rows, cols)
+      should_execute_cols(FALSE)
+    }
+  })
   
   observeEvent(input$ui_grid_collect, {
     rv$grid$collect <- isTRUE(input$ui_grid_collect)

@@ -94,13 +94,31 @@ export_pane_ui <- function(rv) {
 
 register_export_observers <- function(input, rv, session) {
   # Grid export writers - sliders use throttling for responsive updates
-  throttled_observeEvent(input$ui_gridexp_w, { 
-    rv$grid_export$width_mm <- as_num_safe(input$ui_gridexp_w) 
-  }, delay = 200, ignoreInit = TRUE, ignoreNULL = TRUE)
+  # Width slider
+  timer_w <- reactiveTimer(200)
+  should_execute_w <- reactiveVal(FALSE)
+  observeEvent(input$ui_gridexp_w, { 
+    should_execute_w(TRUE)
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  observeEvent(timer_w(), {
+    if (should_execute_w()) {
+      rv$grid_export$width_mm <- as_num_safe(input$ui_gridexp_w)
+      should_execute_w(FALSE)
+    }
+  })
   
-  throttled_observeEvent(input$ui_gridexp_h, { 
-    rv$grid_export$height_mm <- as_num_safe(input$ui_gridexp_h) 
-  }, delay = 200, ignoreInit = TRUE, ignoreNULL = TRUE)
+  # Height slider
+  timer_h <- reactiveTimer(200)
+  should_execute_h <- reactiveVal(FALSE)
+  observeEvent(input$ui_gridexp_h, { 
+    should_execute_h(TRUE)
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  observeEvent(timer_h(), {
+    if (should_execute_h()) {
+      rv$grid_export$height_mm <- as_num_safe(input$ui_gridexp_h)
+      should_execute_h(FALSE)
+    }
+  })
   
   observeEvent(input$ui_gridexp_d, {
     if (input$ui_gridexp_d == "custom") {
@@ -110,28 +128,55 @@ register_export_observers <- function(input, rv, session) {
     }
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
-  throttled_observeEvent(input$ui_gridexp_d_custom, {
-    if (input$ui_gridexp_d == "custom") {
-      rv$grid_export$dpi <- as_num_safe(input$ui_gridexp_d_custom)
+  # Custom DPI slider
+  timer_d_custom <- reactiveTimer(200)
+  should_execute_d_custom <- reactiveVal(FALSE)
+  observeEvent(input$ui_gridexp_d_custom, {
+    should_execute_d_custom(TRUE)
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  observeEvent(timer_d_custom(), {
+    if (should_execute_d_custom()) {
+      if (input$ui_gridexp_d == "custom") {
+        rv$grid_export$dpi <- as_num_safe(input$ui_gridexp_d_custom)
+      }
+      should_execute_d_custom(FALSE)
     }
-  }, delay = 200, ignoreInit = TRUE, ignoreNULL = TRUE)
+  })
   
   observeEvent(input$ui_gridexp_f, {
     rv$grid_export$format <- input$ui_gridexp_f
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Per-plot export writers - sliders use throttling
-  throttled_observeEvent(input$ui_exp_width, {
-    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
-    ensure_edits(rv, ap, grid = FALSE)
-    rv$export[[ap]]$width_mm <- as_num_safe(input$ui_exp_width)
-  }, delay = 200, ignoreInit = TRUE, ignoreNULL = TRUE)
+  # Width slider
+  timer_exp_w <- reactiveTimer(200)
+  should_execute_exp_w <- reactiveVal(FALSE)
+  observeEvent(input$ui_exp_width, {
+    should_execute_exp_w(TRUE)
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  observeEvent(timer_exp_w(), {
+    if (should_execute_exp_w()) {
+      ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+      ensure_edits(rv, ap, grid = FALSE)
+      rv$export[[ap]]$width_mm <- as_num_safe(input$ui_exp_width)
+      should_execute_exp_w(FALSE)
+    }
+  })
   
-  throttled_observeEvent(input$ui_exp_height, {
-    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
-    ensure_edits(rv, ap, grid = FALSE)
-    rv$export[[ap]]$height_mm <- as_num_safe(input$ui_exp_height)
-  }, delay = 200, ignoreInit = TRUE, ignoreNULL = TRUE)
+  # Height slider
+  timer_exp_h <- reactiveTimer(200)
+  should_execute_exp_h <- reactiveVal(FALSE)
+  observeEvent(input$ui_exp_height, {
+    should_execute_exp_h(TRUE)
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  observeEvent(timer_exp_h(), {
+    if (should_execute_exp_h()) {
+      ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+      ensure_edits(rv, ap, grid = FALSE)
+      rv$export[[ap]]$height_mm <- as_num_safe(input$ui_exp_height)
+      should_execute_exp_h(FALSE)
+    }
+  })
   
   observeEvent(input$ui_exp_dpi, {
     ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
@@ -143,13 +188,22 @@ register_export_observers <- function(input, rv, session) {
     }
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
-  throttled_observeEvent(input$ui_exp_dpi_custom, {
-    ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
-    ensure_edits(rv, ap, grid = FALSE)
-    if (input$ui_exp_dpi == "custom") {
-      rv$export[[ap]]$dpi <- as_num_safe(input$ui_exp_dpi_custom)
+  # Custom DPI slider for per-plot export
+  timer_exp_dpi_custom <- reactiveTimer(200)
+  should_execute_exp_dpi_custom <- reactiveVal(FALSE)
+  observeEvent(input$ui_exp_dpi_custom, {
+    should_execute_exp_dpi_custom(TRUE)
+  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  observeEvent(timer_exp_dpi_custom(), {
+    if (should_execute_exp_dpi_custom()) {
+      ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
+      ensure_edits(rv, ap, grid = FALSE)
+      if (input$ui_exp_dpi == "custom") {
+        rv$export[[ap]]$dpi <- as_num_safe(input$ui_exp_dpi_custom)
+      }
+      should_execute_exp_dpi_custom(FALSE)
     }
-  }, delay = 200, ignoreInit = TRUE, ignoreNULL = TRUE)
+  })
   
   observeEvent(input$ui_exp_format, {
     ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
