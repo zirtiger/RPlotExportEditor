@@ -171,32 +171,56 @@ text_pane_ui <- function(rv) {
 
 register_text_observers <- function(input, rv, session) {
   bind_edit <- function(input_id, field) {
-    # Simple debouncing: use invalidateLater for delayed updates
+    # Proper debouncing: create a timer that resets on each input
+    timer <- reactiveTimer(500)
+    should_execute <- reactiveVal(FALSE)
+    last_value <- reactiveVal(NULL)
+    
+    # Observe input changes and reset timer
     observeEvent(input[[input_id]], {
       cat("DEBUG: Input changed for", input_id, "=", input[[input_id]], "\n")
       
-      # Use invalidateLater to delay the update
-      invalidateLater(500)  # 500ms delay
+      # Store the current value
+      last_value(input[[input_id]])
       
-      # Do the actual work
-      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
-      ap <- rv$active_tab
-      if (is.null(ap) || identical(ap, "Grid")) return()
+      # Mark that we should execute when timer fires
+      should_execute(TRUE)
       
-      # The active tab is now the plot index (1, 2, 3, etc.)
-      # Just use it directly if it's a valid plot index
-      plot_index <- NULL
-      if (ap %in% names(rv$plots)) {
-        plot_index <- as.numeric(ap)
-      }
-      
-      if (is.null(plot_index)) return()
-      
-      # Load settings for this plot if needed
-      load_plot_settings(rv, plot_index)
-      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
-      cat("DEBUG: Updated", field, "to", input[[input_id]], "for plot", plot_index, "\n")
+      # Reset the timer (this will fire in 500ms if no more input)
+      timer()
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
+    
+    # Execute when timer fires (only if we should execute)
+    observeEvent(timer(), {
+      if (should_execute()) {
+        cat("DEBUG: Timer fired, executing handler for", input_id, "\n")
+        
+        # Get the last value that was input
+        current_value <- last_value()
+        if (is.null(current_value)) return()
+        
+        if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+        ap <- rv$active_tab
+        if (is.null(ap) || identical(ap, "Grid")) return()
+        
+        # The active tab is now the plot index (1, 2, 3, etc.)
+        # Just use it directly if it's a valid plot index
+        plot_index <- NULL
+        if (ap %in% names(rv$plots)) {
+          plot_index <- as.numeric(ap)
+        }
+        
+        if (is.null(plot_index)) return()
+        
+        # Load settings for this plot if needed
+        load_plot_settings(rv, plot_index)
+        rv$edits[[as.character(plot_index)]][[field]] <- current_value
+        cat("DEBUG: Updated", field, "to", current_value, "for plot", plot_index, "\n")
+        
+        # Reset execution flag
+        should_execute(FALSE)
+      }
+    })
   }
   
   # Persist selected sub-tab
@@ -211,52 +235,86 @@ register_text_observers <- function(input, rv, session) {
   bind_edit("ui_xlab",     "xlab")
   bind_edit("ui_ylab",     "ylab")
   
-  # Sliders - use immediate updates for now to test
+  # Sliders - use throttling for responsive updates
   bind_edit_slider <- function(input_id, field) {
+    # Proper throttling: only execute if enough time has passed
+    last_execution <- reactiveVal(0)
+    
     observeEvent(input[[input_id]], {
       cat("DEBUG: Slider changed for", input_id, "=", input[[input_id]], "\n")
       
-      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
-      ap <- rv$active_tab
-      if (is.null(ap) || identical(ap, "Grid")) return()
-      
-      plot_index <- NULL
-      if (ap %in% names(rv$plots)) {
-        plot_index <- as.numeric(ap)
+      # Check if enough time has passed since last execution
+      now <- Sys.time()
+      if (as.numeric(now - last_execution()) * 1000 >= 200) {  # 200ms throttle
+        last_execution(now)
+        
+        if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+        ap <- rv$active_tab
+        if (is.null(ap) || identical(ap, "Grid")) return()
+        
+        plot_index <- NULL
+        if (ap %in% names(rv$plots)) {
+          plot_index <- as.numeric(ap)
+        }
+        
+        if (is.null(plot_index)) return()
+        
+        load_plot_settings(rv, plot_index)
+        rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
+        cat("DEBUG: Updated slider", field, "to", input[[input_id]], "for plot", plot_index, "\n")
       }
-      
-      if (is.null(plot_index)) return()
-      
-      load_plot_settings(rv, plot_index)
-      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
-      cat("DEBUG: Updated slider", field, "to", input[[input_id]], "for plot", plot_index, "\n")
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
   
-  # Numeric inputs - use debouncing for smooth typing
+  # Numeric inputs - use proper debouncing
   bind_edit_numeric <- function(input_id, field) {
+    # Proper debouncing: create a timer that resets on each input
+    timer <- reactiveTimer(500)
+    should_execute <- reactiveVal(FALSE)
+    last_value <- reactiveVal(NULL)
+    
+    # Observe input changes and reset timer
     observeEvent(input[[input_id]], {
       cat("DEBUG: Numeric input changed for", input_id, "=", input[[input_id]], "\n")
       
-      # Use invalidateLater to delay the update
-      invalidateLater(500)  # 500ms delay
+      # Store the current value
+      last_value(input[[input_id]])
       
-      # Do the actual work
-      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
-      ap <- rv$active_tab
-      if (is.null(ap) || identical(ap, "Grid")) return()
+      # Mark that we should execute when timer fires
+      should_execute(TRUE)
       
-      plot_index <- NULL
-      if (ap %in% names(rv$plots)) {
-        plot_index <- as.numeric(ap)
-      }
-      
-      if (is.null(plot_index)) return()
-      
-      load_plot_settings(rv, plot_index)
-      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
-      cat("DEBUG: Updated numeric", field, "to", input[[input_id]], "for plot", plot_index, "\n")
+      # Reset the timer (this will fire in 500ms if no more input)
+      timer()
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
+    
+    # Execute when timer fires (only if we should execute)
+    observeEvent(timer(), {
+      if (should_execute()) {
+        cat("DEBUG: Numeric timer fired, executing handler for", input_id, "\n")
+        
+        # Get the last value that was input
+        current_value <- last_value()
+        if (is.null(current_value)) return()
+        
+        if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+        ap <- rv$active_tab
+        if (is.null(ap) || identical(ap, "Grid")) return()
+        
+        plot_index <- NULL
+        if (ap %in% names(rv$plots)) {
+          plot_index <- as.numeric(ap)
+        }
+        
+        if (is.null(plot_index)) return()
+        
+        load_plot_settings(rv, plot_index)
+        rv$edits[[as.character(plot_index)]][[field]] <- current_value
+        cat("DEBUG: Updated numeric", field, "to", current_value, "for plot", plot_index, "\n")
+        
+        # Reset execution flag
+        should_execute(FALSE)
+      }
+    })
   }
   
   # Base size (moved from theme) - slider
