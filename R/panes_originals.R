@@ -1,7 +1,7 @@
 # plot-editor/R/panes_originals.R
 
 originals_pane_ui <- function(rv) {
-  if (length(rv$plots) == 0) {
+  if (length(isolate(rv$plots)) == 0) {
     return(tagList(
       h4("Original Settings"),
       helpText("No plots loaded. Load some plots to view their original settings.")
@@ -9,9 +9,9 @@ originals_pane_ui <- function(rv) {
   }
   
   # Get current active plot for context
-  active_plot <- rv$active_tab
+  active_plot <- isolate(rv$active_tab)
   if (is.null(active_plot) || active_plot == "Grid") {
-    active_plot <- if (length(rv$plots) > 0) names(rv$plots)[1] else NULL
+    active_plot <- if (length(rv$plots) > 0) names(isolate(rv$plots))[1] else NULL
   }
   
   tagList(
@@ -22,7 +22,7 @@ originals_pane_ui <- function(rv) {
     # Plot selector
     if (length(rv$plots) > 1) {
       selectInput("originals_plot_selector", "Select Plot:", 
-                  choices = names(rv$plots), 
+                  choices = names(isolate(rv$plots)), 
                   selected = active_plot)
     },
     

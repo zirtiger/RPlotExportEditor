@@ -6,8 +6,8 @@ grid_pane_ui <- function(rv) {
     return(tagList(h4("Grid"), helpText("Switch to the Grid tab to configure grid settings.")))
   }
   
-  g <- rv$grid
-  choices <- c("(empty)", names(rv$plots))
+  g <- isolate(rv$grid)
+  choices <- c("(empty)", names(isolate(rv$plots)))
   
   # Build cell selectors
   r <- g$rows %||% BASE$grid_rows
@@ -56,14 +56,23 @@ grid_pane_ui <- function(rv) {
 
 # ---------- Observers ----------
 register_grid_observers <- function(input, rv, session) {
-  # Layout changes
-  observeEvent(input$ui_grid_rows, {
-    rows <- as_num_safe(input$ui_grid_rows) %||% BASE$grid_rows
+  # Create debounced reactive expressions for numeric inputs
+  grid_rows_reactive <- reactive({ input$ui_grid_rows })
+  grid_cols_reactive <- reactive({ input$ui_grid_cols })
+  
+  debounced_grid_rows <- debounce(grid_rows_reactive, 500)
+  debounced_grid_cols <- debounce(grid_cols_reactive, 500)
+  
+  # Layout changes - numeric inputs use debouncing for smooth typing
+  # Rows input
+  observeEvent(debounced_grid_rows(), {
+    rows <- as_num_safe(debounced_grid_rows()) %||% BASE$grid_rows
     resize_cells(rv, rows, rv$grid$cols %||% BASE$grid_cols)
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
-  observeEvent(input$ui_grid_cols, {
-    cols <- as_num_safe(input$ui_grid_cols) %||% BASE$grid_cols
+  # Columns input
+  observeEvent(debounced_grid_cols(), {
+    cols <- as_num_safe(debounced_grid_cols()) %||% BASE$grid_cols
     resize_cells(rv, rv$grid$rows %||% BASE$grid_rows, cols)
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   

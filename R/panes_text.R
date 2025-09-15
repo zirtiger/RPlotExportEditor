@@ -1,7 +1,7 @@
 # plot-editor/R/panes_text.R
 
-text_pane_ui <- function(rv) {
-  grid_ctx <- identical(rv$active_tab, "Grid")
+# Static UI function that reads values but doesn't cause reactivity issues
+text_pane_ui_static <- function(grid_ctx, selected_tab, rv) {
   if (grid_ctx) {
     return(tagList(
       h4("Text — Grid context"),
@@ -9,186 +9,124 @@ text_pane_ui <- function(rv) {
       helpText("Select a grid cell in the layout and then edit that plot's text under its own tab, or switch to a plot tab to edit its standalone text.")
     ))
   }
-  
+
+  # Get current plot values
   ap <- rv$active_tab
   plot_selected <- !is.null(ap) && !is.null(rv$plots[[ap]])
-  if (!plot_selected) return(tagList(h4("Text"), helpText("Select a plot tab to edit its text.")))
   
-  cat("DEBUG: text_pane_ui - active_tab:", ap, "type:", typeof(ap), "\n")
-  cat("DEBUG: text_pane_ui - plots available:", paste(names(rv$plots), collapse=", "), "\n")
+  if (!plot_selected) {
+    return(tagList(h4("Text"), helpText("Select a plot tab to edit its text.")))
+  }
   
+  # Get the correct values from the architecture for this plot
   e <- rv$edits[[ap]]
   p <- rv$plots[[ap]]
-  
-  cat("DEBUG: text_pane_ui - edits for", ap, ":", if(is.null(e)) "NULL" else paste(names(e), collapse=", "), "\n")
   
   get_lab <- function(lbl) {
     val <- tryCatch(p$labels[[lbl]], error = function(...) NULL)
     if (is.null(val)) "" else as.character(val)
   }
   
-  title_now    <- e$title    %||% get_lab("title")
+  # Use edits if available, otherwise use original plot values
+  title_now    <- e$title %||% get_lab("title")
   subtitle_now <- e$subtitle %||% get_lab("subtitle")
-  caption_now  <- e$caption  %||% get_lab("caption")
-  xlab_now     <- e$xlab     %||% get_lab("x")
-  ylab_now     <- e$ylab     %||% get_lab("y")
+  caption_now  <- e$caption %||% get_lab("caption")
+  xlab_now     <- e$xlab %||% get_lab("x")
+  ylab_now     <- e$ylab %||% get_lab("y")
   
-  grid_major_on <- isTRUE(e$grid_major)
-  grid_minor_on <- isTRUE(e$grid_minor)
+  # Use edits if available, otherwise use default values
+  base_size_now <- e$base_size %||% 12
+  title_size_now <- e$title_size %||% 1.2
+  subtitle_size_now <- e$subtitle_size %||% 1.0
+  caption_size_now <- e$caption_size %||% 0.8
+  axis_title_size_now <- e$axis_title_size %||% 1.0
+  axis_text_size_now <- e$axis_text_size %||% 0.8
+  legend_title_size_now <- e$legend_title_size %||% 1.0
+  legend_text_size_now <- e$legend_text_size %||% 0.8
   
+  # Numeric inputs
+  x_min_now <- e$x_min
+  x_max_now <- e$x_max
+  y_min_now <- e$y_min
+  y_max_now <- e$y_max
+  x_step_major_now <- e$x_step_major
+  x_step_minor_now <- e$x_step_minor
+  y_step_major_now <- e$y_step_major
+  y_step_minor_now <- e$y_step_minor
+
   tagList(
     actionButton("apply_all_text", "Use for all plots", class = "btn btn-sm btn-default btn-block"),
     tags$hr(),
-    
-    # Use tabs for better organization
     tabsetPanel(
       id = "text_tabs",
-      selected = rv$tabs$text %||% "Labels",
+      selected = selected_tab,
       tabPanel("Labels", 
-        textInput("ui_title",    "Title",    title_now),
-        textInput("ui_subtitle", "Subtitle", subtitle_now),
-        textInput("ui_caption",  "Caption",  caption_now),
-        textInput("ui_xlab",     "X label",  xlab_now),
-        textInput("ui_ylab",     "Y label",  ylab_now)
+        textInput("ui_title",    "Title",    value = title_now),
+        textInput("ui_subtitle", "Subtitle", value = subtitle_now),
+        textInput("ui_caption",  "Caption",  value = caption_now),
+        textInput("ui_xlab",     "X label",  value = xlab_now),
+        textInput("ui_ylab",     "Y label",  value = ylab_now)
       ),
       tabPanel("Text Sizes",
-        # Base size control (alone at top)
-        sliderInput("ui_base_size", "Base text size", 
-                   value = e$base_size %||% 12, 
-                   min = 8, max = 24, step = 1),
-        
-        # Row 1: Title and Subtitle
+        sliderInput("ui_base_size", "Base text size", value = base_size_now, min = 8, max = 24, step = 1),
         fluidRow(
-          column(6,
-            div(
-              sliderInput("ui_title_size", "Title", 
-                         value = e$title_size %||% 1.2, 
-                         min = 0.5, max = 3.0, step = 0.1),
-              tags$small(style="color:#777;", 
-                         "Size: ", 
-                         round((e$title_size %||% 1.2) * (e$base_size %||% 12), 1))
-            )
-          ),
-          column(6,
-            div(
-              sliderInput("ui_subtitle_size", "Subtitle", 
-                         value = e$subtitle_size %||% 1.0, 
-                         min = 0.5, max = 2.5, step = 0.1),
-              tags$small(style="color:#777;", 
-                         "Size: ", 
-                         round((e$subtitle_size %||% 1.0) * (e$base_size %||% 12), 1))
-            )
-          )
+          column(6, sliderInput("ui_title_size",    "Title",       value = title_size_now, min = 0.5, max = 3.0, step = 0.1)),
+          column(6, sliderInput("ui_subtitle_size", "Subtitle",    value = subtitle_size_now, min = 0.5, max = 2.5, step = 0.1))
         ),
-        
-        # Row 2: Axis texts
         fluidRow(
-          column(6,
-            div(
-              sliderInput("ui_axis_title_size", "Axis title", 
-                         value = e$axis_title_size %||% 1.0, 
-                         min = 0.5, max = 2.5, step = 0.1),
-              tags$small(style="color:#777;", 
-                         "Size: ", 
-                         round((e$axis_title_size %||% 1.0) * (e$base_size %||% 12), 1))
-            )
-          ),
-          column(6,
-            div(
-              sliderInput("ui_axis_text_size", "Axis text", 
-                         value = e$axis_text_size %||% 0.8, 
-                         min = 0.5, max = 2.0, step = 0.1),
-              tags$small(style="color:#777;", 
-                         "Size: ", 
-                         round((e$axis_text_size %||% 0.8) * (e$base_size %||% 12), 1))
-            )
-          )
+          column(6, sliderInput("ui_axis_title_size","Axis title",  value = axis_title_size_now, min = 0.5, max = 2.5, step = 0.1)),
+          column(6, sliderInput("ui_axis_text_size", "Axis text",   value = axis_text_size_now, min = 0.5, max = 2.0, step = 0.1))
         ),
-        
-        # Row 3: Legends
         fluidRow(
-          column(6,
-            div(
-              sliderInput("ui_legend_title_size", "Legend title", 
-                         value = e$legend_title_size %||% 1.0, 
-                         min = 0.5, max = 2.5, step = 0.1),
-              tags$small(style="color:#777;", 
-                         "Size: ", 
-                         round((e$legend_title_size %||% 1.0) * (e$base_size %||% 12), 1))
-            )
-          ),
-          column(6,
-            div(
-              sliderInput("ui_legend_text_size", "Legend text", 
-                         value = e$legend_text_size %||% 0.8, 
-                         min = 0.5, max = 2.0, step = 0.1),
-              tags$small(style="color:#777;", 
-                         "Size: ", 
-                         round((e$legend_text_size %||% 0.8) * (e$base_size %||% 12), 1))
-            )
-          )
+          column(6, sliderInput("ui_legend_title_size","Legend title", value = legend_title_size_now, min = 0.5, max = 2.5, step = 0.1)),
+          column(6, sliderInput("ui_legend_text_size", "Legend text",  value = legend_text_size_now, min = 0.5, max = 2.0, step = 0.1))
         ),
-        
-        # Row 4: Caption (alone, centered)
         fluidRow(
-          column(6, offset = 3,
-            div(
-              sliderInput("ui_caption_size", "Caption", 
-                         value = e$caption_size %||% 0.8, 
-                         min = 0.5, max = 2.0, step = 0.1),
-              tags$small(style="color:#777;", 
-                         "Size: ", 
-                         round((e$caption_size %||% 0.8) * (e$base_size %||% 12), 1))
-            )
-          )
+          column(6, offset = 3, sliderInput("ui_caption_size", "Caption", value = caption_size_now, min = 0.5, max = 2.0, step = 0.1))
         )
       ),
       tabPanel("Axis",
         fluidRow(
-          column(6, numericInput("ui_x_min", "X min", value = e$x_min, step = 0.1)),
-          column(6, numericInput("ui_x_max", "X max", value = e$x_max, step = 0.1))
+          column(6, numericInput("ui_x_min", "X min", value = x_min_now, step = 0.1)),
+          column(6, numericInput("ui_x_max", "X max", value = x_max_now, step = 0.1))
         ),
         fluidRow(
-          column(6, numericInput("ui_y_min", "Y min", value = e$y_min, step = 0.1)),
-          column(6, numericInput("ui_y_max", "Y max", value = e$y_max, step = 0.1))
+          column(6, numericInput("ui_y_min", "Y min", value = y_min_now, step = 0.1)),
+          column(6, numericInput("ui_y_max", "Y max", value = y_max_now, step = 0.1))
         ),
-        tags$hr(),
-        h5("Steps"),
+        tags$hr(), h5("Steps"),
         fluidRow(
-          column(6, numericInput("ui_x_step_major", "X major", value = e$x_step_major, min = 0, step = 0.1)),
-          column(6, numericInput("ui_y_step_major", "Y major", value = e$y_step_major, min = 0, step = 0.1))
+          column(6, numericInput("ui_x_step_major", "X major", value = x_step_major_now, min = 0, step = 0.1)),
+          column(6, numericInput("ui_y_step_major", "Y major", value = y_step_major_now, min = 0, step = 0.1))
         ),
         fluidRow(
-          column(6, numericInput("ui_x_step_minor", "X minor", value = e$x_step_minor, min = 0, step = 0.1)),
-          column(6, numericInput("ui_y_step_minor", "Y minor", value = e$y_step_minor, min = 0, step = 0.1))
+          column(6, numericInput("ui_x_step_minor", "X minor", value = x_step_minor_now, min = 0, step = 0.1)),
+          column(6, numericInput("ui_y_step_minor", "Y minor", value = y_step_minor_now, min = 0, step = 0.1))
         ),
-        if (!grid_major_on) tags$small(style="color:#777;", "Major grid lines are off."),
-        if (!grid_minor_on) tags$small(style="color:#777; display:block;", "Minor grid lines are off.")
+        tags$small(style="color:#777;", "Grid settings are managed in the Theme tab.")
       )
     )
   )
 }
 
+# Wrapper function for compatibility
+text_pane_ui <- function(rv) {
+  grid_ctx <- identical(rv$active_tab, "Grid")
+  selected_tab <- isolate(rv$tabs$text %||% "Labels")
+  isolate(text_pane_ui_static(grid_ctx, selected_tab, rv))
+}
+
 register_text_observers <- function(input, rv, session) {
+  
+  # Simple function to save changes
   bind_edit <- function(input_id, field) {
-    # Use onBlur to only update when focus is lost
     observeEvent(input[[input_id]], {
-      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+      if (isTRUE(rv$is_hydrating)) return()  # harmless if NULL
       ap <- rv$active_tab
       if (is.null(ap) || identical(ap, "Grid")) return()
-      
-      # The active tab is now the plot index (1, 2, 3, etc.)
-      # Just use it directly if it's a valid plot index
-      plot_index <- NULL
-      if (ap %in% names(rv$plots)) {
-        plot_index <- as.numeric(ap)
-      }
-      
-      if (is.null(plot_index)) return()
-      
-      # Load settings for this plot if needed
-      load_plot_settings(rv, plot_index)
-      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
+      if (!(ap %in% names(rv$plots))) return()
+      load_plot_settings(rv, as.numeric(ap))
+      rv$edits[[as.character(as.numeric(ap))]][[field]] <- input[[input_id]]
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
   }
   
@@ -197,36 +135,75 @@ register_text_observers <- function(input, rv, session) {
     rv$tabs$text <- input$text_tabs
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
-  # Basic text labels
+  
+  # Basic text labels - save changes immediately
   bind_edit("ui_title",    "title")
   bind_edit("ui_subtitle", "subtitle")
   bind_edit("ui_caption",  "caption")
   bind_edit("ui_xlab",     "xlab")
   bind_edit("ui_ylab",     "ylab")
   
-  # Base size (moved from theme)
-  bind_edit("ui_base_size", "base_size")
+  # Sliders - save changes immediately
+  bind_edit_slider <- function(input_id, field) {
+    observeEvent(input[[input_id]], {
+      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+      ap <- rv$active_tab
+      if (is.null(ap) || identical(ap, "Grid")) return()
+      
+      plot_index <- NULL
+      if (ap %in% names(rv$plots)) {
+        plot_index <- as.numeric(ap)
+      }
+      
+      if (is.null(plot_index)) return()
+      
+      load_plot_settings(rv, plot_index)
+      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
+    }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  }
   
-  # Text sizes
-  bind_edit("ui_title_size", "title_size")
-  bind_edit("ui_subtitle_size", "subtitle_size")
-  bind_edit("ui_caption_size", "caption_size")
-  bind_edit("ui_axis_title_size", "axis_title_size")
-  bind_edit("ui_axis_text_size", "axis_text_size")
-  bind_edit("ui_legend_title_size", "legend_title_size")
-  bind_edit("ui_legend_text_size", "legend_text_size")
+  # Numeric inputs - save changes immediately
+  bind_edit_numeric <- function(input_id, field) {
+    observeEvent(input[[input_id]], {
+      if (!is.null(rv$is_hydrating) && rv$is_hydrating) return()
+      ap <- rv$active_tab
+      if (is.null(ap) || identical(ap, "Grid")) return()
+      
+      plot_index <- NULL
+      if (ap %in% names(rv$plots)) {
+        plot_index <- as.numeric(ap)
+      }
+      
+      if (is.null(plot_index)) return()
+      
+      load_plot_settings(rv, plot_index)
+      rv$edits[[as.character(plot_index)]][[field]] <- input[[input_id]]
+    }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  }
   
-  # Axis limits
-  bind_edit("ui_x_min", "x_min")
-  bind_edit("ui_x_max", "x_max")
-  bind_edit("ui_y_min", "y_min")
-  bind_edit("ui_y_max", "y_max")
+  # Base size (moved from theme) - slider
+  bind_edit_slider("ui_base_size", "base_size")
   
-  # Axis steps
-  bind_edit("ui_x_step_minor", "x_step_minor")
-  bind_edit("ui_x_step_major", "x_step_major")
-  bind_edit("ui_y_step_minor", "y_step_minor")
-  bind_edit("ui_y_step_major", "y_step_major")
+  # Text sizes - sliders
+  bind_edit_slider("ui_title_size", "title_size")
+  bind_edit_slider("ui_subtitle_size", "subtitle_size")
+  bind_edit_slider("ui_caption_size", "caption_size")
+  bind_edit_slider("ui_axis_title_size", "axis_title_size")
+  bind_edit_slider("ui_axis_text_size", "axis_text_size")
+  bind_edit_slider("ui_legend_title_size", "legend_title_size")
+  bind_edit_slider("ui_legend_text_size", "legend_text_size")
+  
+  # Axis limits - numeric inputs
+  bind_edit_numeric("ui_x_min", "x_min")
+  bind_edit_numeric("ui_x_max", "x_max")
+  bind_edit_numeric("ui_y_min", "y_min")
+  bind_edit_numeric("ui_y_max", "y_max")
+  
+  # Axis steps - numeric inputs
+  bind_edit_numeric("ui_x_step_minor", "x_step_minor")
+  bind_edit_numeric("ui_x_step_major", "x_step_major")
+  bind_edit_numeric("ui_y_step_minor", "y_step_minor")
+  bind_edit_numeric("ui_y_step_major", "y_step_major")
   
   observeEvent(input$apply_all_text, {
     ap <- rv$active_tab

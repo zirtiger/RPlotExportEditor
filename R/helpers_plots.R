@@ -744,10 +744,12 @@ get_first_new_plot <- function(rv, previous_count) {
 load_plot_settings <- function(rv, plot_index) {
 	index_str <- as.character(plot_index)
 	
-	# If we don't have edits for this plot yet, initialize them as empty
-	# DO NOT copy originals to edits - edits should only contain user modifications
-	if (is.null(rv$edits[[index_str]]) || length(rv$edits[[index_str]]) == 0) {
+	# Only initialize edits if they don't exist at all
+	# DO NOT reinitialize existing edits - this would wipe out user changes!
+	if (is.null(rv$edits[[index_str]])) {
 		rv$edits[[index_str]] <- list()
-		# The UI will get values from originals when edits are empty
+		cat("DEBUG: load_plot_settings - initialized empty edits for plot", plot_index, "\n")
+	} else {
+		cat("DEBUG: load_plot_settings - edits already exist for plot", plot_index, "preserving", length(rv$edits[[index_str]]), "settings\n")
 	}
 }
