@@ -4,7 +4,7 @@ export_pane_ui <- function(rv) {
   grid_ctx <- identical(rv$active_tab, "Grid")
   
   if (grid_ctx) {
-    ex <- rv$grid_export
+    ex <- isolate(rv$grid_export)
     return(tagList(
       h4("Export — Grid canvas"),
       tags$hr(),
@@ -12,7 +12,7 @@ export_pane_ui <- function(rv) {
       # Use tabs for better organization
       tabsetPanel(
         id = "export_tabs",
-        selected = rv$tabs$export %||% "Dimensions",
+        selected = isolate(rv$tabs$export %||% "Dimensions"),
         tabPanel("Dimensions",
           fluidRow(
             column(6, sliderInput("ui_gridexp_w", "Width (mm)", 
@@ -44,12 +44,12 @@ export_pane_ui <- function(rv) {
     ))
   }
   
-  ap <- rv$active_tab
+  ap <- isolate(rv$active_tab)
   if (is.null(ap) || is.null(rv$plots[[ap]])) {
     return(tagList(h4("Export"), helpText("Select a plot tab to configure export settings.")))
   }
   
-  ex <- rv$export[[ap]]
+  ex <- isolate(rv$export[[ap]])
   
   tagList(
     actionButton("apply_all_export", "Use for all plots", class = "btn btn-sm btn-default btn-block"),
@@ -58,7 +58,7 @@ export_pane_ui <- function(rv) {
     # Use tabs for better organization
     tabsetPanel(
       id = "export_tabs",
-      selected = rv$tabs$export %||% "Dimensions",
+      selected = isolate(rv$tabs$export %||% "Dimensions"),
       tabPanel("Dimensions",
         fluidRow(
           column(6, sliderInput("ui_exp_width", "Width (mm)", 
@@ -93,17 +93,24 @@ export_pane_ui <- function(rv) {
 }
 
 register_export_observers <- function(input, rv, session) {
-  # Grid export writers - sliders use simple debouncing
+  # Create debounced reactive expressions for grid export sliders
+  gridexp_w_reactive <- reactive({ input$ui_gridexp_w })
+  gridexp_h_reactive <- reactive({ input$ui_gridexp_h })
+  gridexp_d_custom_reactive <- reactive({ input$ui_gridexp_d_custom })
+  
+  debounced_gridexp_w <- debounce(gridexp_w_reactive, 200)
+  debounced_gridexp_h <- debounce(gridexp_h_reactive, 200)
+  debounced_gridexp_d_custom <- debounce(gridexp_d_custom_reactive, 200)
+  
+  # Grid export writers - sliders use debouncing for smooth interaction
   # Width slider
-  observeEvent(input$ui_gridexp_w, { 
-    invalidateLater(200)  # 200ms delay
-    rv$grid_export$width_mm <- as_num_safe(input$ui_gridexp_w)
+  observeEvent(debounced_gridexp_w(), { 
+    rv$grid_export$width_mm <- as_num_safe(debounced_gridexp_w())
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Height slider
-  observeEvent(input$ui_gridexp_h, { 
-    invalidateLater(200)  # 200ms delay
-    rv$grid_export$height_mm <- as_num_safe(input$ui_gridexp_h)
+  observeEvent(debounced_gridexp_h(), { 
+    rv$grid_export$height_mm <- as_num_safe(debounced_gridexp_h())
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Dropdowns - keep immediate updates
@@ -116,10 +123,9 @@ register_export_observers <- function(input, rv, session) {
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Custom DPI slider
-  observeEvent(input$ui_gridexp_d_custom, {
-    invalidateLater(200)  # 200ms delay
+  observeEvent(debounced_gridexp_d_custom(), {
     if (input$ui_gridexp_d == "custom") {
-      rv$grid_export$dpi <- as_num_safe(input$ui_gridexp_d_custom)
+      rv$grid_export$dpi <- as_num_safe(debounced_gridexp_d_custom())
     }
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
@@ -127,21 +133,28 @@ register_export_observers <- function(input, rv, session) {
     rv$grid_export$format <- input$ui_gridexp_f
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
-  # Per-plot export writers - sliders use simple debouncing
+  # Create debounced reactive expressions for per-plot export sliders
+  exp_width_reactive <- reactive({ input$ui_exp_width })
+  exp_height_reactive <- reactive({ input$ui_exp_height })
+  exp_dpi_custom_reactive <- reactive({ input$ui_exp_dpi_custom })
+  
+  debounced_exp_width <- debounce(exp_width_reactive, 200)
+  debounced_exp_height <- debounce(exp_height_reactive, 200)
+  debounced_exp_dpi_custom <- debounce(exp_dpi_custom_reactive, 200)
+  
+  # Per-plot export writers - sliders use debouncing for smooth interaction
   # Width slider
-  observeEvent(input$ui_exp_width, {
-    invalidateLater(200)  # 200ms delay
+  observeEvent(debounced_exp_width(), {
     ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
-    rv$export[[ap]]$width_mm <- as_num_safe(input$ui_exp_width)
+    rv$export[[ap]]$width_mm <- as_num_safe(debounced_exp_width())
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Height slider
-  observeEvent(input$ui_exp_height, {
-    invalidateLater(200)  # 200ms delay
+  observeEvent(debounced_exp_height(), {
     ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
-    rv$export[[ap]]$height_mm <- as_num_safe(input$ui_exp_height)
+    rv$export[[ap]]$height_mm <- as_num_safe(debounced_exp_height())
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Dropdowns - keep immediate updates
@@ -156,12 +169,11 @@ register_export_observers <- function(input, rv, session) {
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Custom DPI slider for per-plot export
-  observeEvent(input$ui_exp_dpi_custom, {
-    invalidateLater(200)  # 200ms delay
+  observeEvent(debounced_exp_dpi_custom(), {
     ap <- rv$active_tab; if (is.null(ap) || is.null(rv$plots[[ap]])) return()
     ensure_edits(rv, ap, grid = FALSE)
     if (input$ui_exp_dpi == "custom") {
-      rv$export[[ap]]$dpi <- as_num_safe(input$ui_exp_dpi_custom)
+      rv$export[[ap]]$dpi <- as_num_safe(debounced_exp_dpi_custom())
     }
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   

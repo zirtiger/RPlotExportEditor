@@ -9,7 +9,7 @@ theme_pane_ui <- function(rv) {
 		))
 	}
 	
-	ap <- rv$active_tab
+	ap <- isolate(rv$active_tab)
 	if (is.null(ap) || is.null(rv$plots[[ap]])) return(tagList(h4("Theme"), helpText("Select a plot tab.")))
 	
 	# UI should not modify state - only read values
@@ -35,14 +35,7 @@ theme_pane_ui <- function(rv) {
 	continuous_colour_palette_val <- get_val("continuous_colour_palette", "None")
 	continuous_fill_palette_val <- get_val("continuous_fill_palette", "None")
 	
-	# Debug: Print what values are being loaded
-	cat("\n=== LOADING UI FOR PLOT:", ap, "===\n")
-	cat("  theme:", theme_val, "\n")
-	cat("  base_size:", base_size_val, "\n")
-	cat("  palette:", palette_val, "\n")
-	cat("  continuous_colour_palette:", continuous_colour_palette_val, "\n")
-	cat("  continuous_fill_palette:", continuous_fill_palette_val, "\n")
-	cat("  colour_levels:", paste(get_val("colour_levels", character(0)), collapse = ", "), "\n")
+	# Debug output removed to prevent unnecessary re-renders
 	
 	# Get color levels from current values
 	colour_lvls <- get_val("colour_levels", character(0))
@@ -429,7 +422,7 @@ register_theme_observers <- function(input, rv, session) {
 		showNotification("Palette applied to existing levels", type = "message")
 	}, ignoreInit = TRUE)
 	
-	# Dynamic level color pickers - simple approach that only updates on valid changes
+	# Dynamic level color pickers - with proper debouncing for smooth color selection
 	observe({
 		plot_index <- get_plot_index()
 		if (is.null(plot_index)) return()
@@ -442,12 +435,17 @@ register_theme_observers <- function(input, rv, session) {
 		
 
 		
-		# Simple observers that only update when there's a valid new color
+		# Color pickers with proper debouncing for smooth interaction
 		if (!is.null(e$colour_levels) && length(e$colour_levels)) {
 			lapply(seq_along(e$colour_levels), function(i) {
-				observeEvent(input[[paste0("ui_colour_", i)]], {
+				# Create reactive expression for each color picker
+				color_reactive <- reactive({ input[[paste0("ui_colour_", i)]] })
+				# Apply debounce to the reactive expression
+				debounced_color <- debounce(color_reactive, 300)
+				
+				observeEvent(debounced_color(), {
 					if (rv$is_hydrating) return()
-					new_color <- input[[paste0("ui_colour_", i)]]
+					new_color <- debounced_color()
 					# Only update if we have a valid color and it's different from current
 					if (!is.null(new_color) && nzchar(new_color) && 
 						(is.null(e$colour_levels_cols[i]) || e$colour_levels_cols[i] != new_color)) {
@@ -459,9 +457,14 @@ register_theme_observers <- function(input, rv, session) {
 		
 		if (!is.null(e$fill_levels) && length(e$fill_levels)) {
 			lapply(seq_along(e$fill_levels), function(i) {
-				observeEvent(input[[paste0("ui_fill_", i)]], {
+				# Create reactive expression for each fill picker
+				fill_reactive <- reactive({ input[[paste0("ui_fill_", i)]] })
+				# Apply debounce to the reactive expression
+				debounced_fill <- debounce(fill_reactive, 300)
+				
+				observeEvent(debounced_fill(), {
 					if (rv$is_hydrating) return()
-					new_color <- input[[paste0("ui_fill_", i)]]
+					new_color <- debounced_fill()
 					# Only update if we have a valid color and it's different from current
 					if (!is.null(new_color) && nzchar(new_color) && 
 						(is.null(e$fill_levels_cols[i]) || e$fill_levels_cols[i] != new_color)) {

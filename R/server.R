@@ -275,6 +275,9 @@ app_server <- function(input, output, session) {
   
   # --- Sidebar panes (render) ------------------------------------------
   output$subsidebar <- renderUI({
+    # Make this reactive only to active_tab changes, not to rv$edits changes
+    rv$active_tab  # This makes it reactive to active_tab changes
+    
     cur <- input$mainmenu %||% "grid"
     
     # Check if the current menu item should be active
