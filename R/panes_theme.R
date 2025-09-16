@@ -1,5 +1,47 @@
 # plot-editor/R/panes_theme.R
 
+# Generate colors from a palette for a given number of levels
+generate_palette_colors <- function(n, palette_name) {
+	if (n <= 0) return(character(0))
+	
+	# Handle viridis-like palettes
+	if (palette_name %in% c("viridis", "magma", "plasma", "inferno", "cividis")) {
+		if (requireNamespace("viridisLite", quietly = TRUE)) {
+			return(viridisLite::viridis(n, option = palette_name))
+		} else {
+			return(grDevices::rainbow(n))
+		}
+	}
+	
+	# Handle RColorBrewer palettes
+	if (palette_name %in% c("Set1", "Set2", "Set3", "Paired", "Dark2", "Accent")) {
+		if (requireNamespace("RColorBrewer", quietly = TRUE)) {
+			# Get the maximum number of colors available for this palette
+			max_colors <- RColorBrewer::brewer.pal.info[palette_name, "maxcolors"]
+			if (n <= max_colors) {
+				# Use the exact number of colors needed
+				colors <- RColorBrewer::brewer.pal(min(n, max_colors), palette_name)
+				if (n < max_colors) {
+					# If we need fewer colors, take the first n
+					colors <- colors[1:n]
+				}
+				return(colors)
+			} else {
+				# If we need more colors than available, use the max and extend with rainbow
+				base_colors <- RColorBrewer::brewer.pal(max_colors, palette_name)
+				extra_colors <- grDevices::rainbow(n - max_colors)
+				return(c(base_colors, extra_colors))
+			}
+		} else {
+			# Fallback to rainbow if RColorBrewer not available
+			return(grDevices::rainbow(n))
+		}
+	}
+	
+	# Default fallback
+	return(grDevices::rainbow(n))
+}
+
 theme_pane_ui <- function(rv) {
 	grid_ctx <- identical(rv$active_tab, "Grid")
 	if (grid_ctx) {
@@ -102,47 +144,6 @@ theme_pane_ui <- function(rv) {
 		}
 	}
 	
-	# Generate colors from a palette for a given number of levels
-	generate_palette_colors <- function(n, palette_name) {
-		if (n <= 0) return(character(0))
-		
-		# Handle viridis-like palettes
-		if (palette_name %in% c("viridis", "magma", "plasma", "inferno", "cividis")) {
-			if (requireNamespace("viridisLite", quietly = TRUE)) {
-				return(viridisLite::viridis(n, option = palette_name))
-			} else {
-				return(grDevices::rainbow(n))
-			}
-		}
-		
-		# Handle RColorBrewer palettes
-		if (palette_name %in% c("Set1", "Set2", "Set3", "Paired", "Dark2", "Accent")) {
-			if (requireNamespace("RColorBrewer", quietly = TRUE)) {
-				# Get the maximum number of colors available for this palette
-				max_colors <- RColorBrewer::brewer.pal.info[palette_name, "maxcolors"]
-				if (n <= max_colors) {
-					# Use the exact number of colors needed
-					colors <- RColorBrewer::brewer.pal(min(n, max_colors), palette_name)
-					if (n < max_colors) {
-						# If we need fewer colors, take the first n
-						colors <- colors[1:n]
-					}
-					return(colors)
-				} else {
-					# If we need more colors than available, use the max and extend with rainbow
-					base_colors <- RColorBrewer::brewer.pal(max_colors, palette_name)
-					extra_colors <- grDevices::rainbow(n - max_colors)
-					return(c(base_colors, extra_colors))
-				}
-			} else {
-				# Fallback to rainbow if RColorBrewer not available
-				return(grDevices::rainbow(n))
-			}
-		}
-		
-		# Default fallback
-		return(grDevices::rainbow(n))
-	}
 	
 	tagList(
 		div(style="display:flex; gap:8px; margin-bottom:8px;",
@@ -226,6 +227,9 @@ theme_pane_ui <- function(rv) {
 						selectInput("ui_palette", "Discrete Palette",
 							choices = c("None", "viridis", "magma", "plasma", "inferno", "cividis", "Set1", "Set2", "Set3", "Paired", "Dark2", "Accent"),
 							selected = palette_val),
+						div(style="margin-top:8px;",
+							actionButton("ui_apply_palette_levels", "Apply Palette to Levels", class = "btn btn-sm btn-primary")
+						),
 						tags$hr(),
 						if (length(colour_lvls)) tagList(
 							tags$strong("Colour levels"),
