@@ -1,5 +1,64 @@
 # plot-editor/R/panes_theme.R
 
+# Detect the theme used in a plot
+detect_plot_theme <- function(plot_obj) {
+	if (is.null(plot_obj) || is.null(plot_obj$theme)) {
+		return("theme_minimal")  # Default fallback
+	}
+	
+	# Try to detect the theme by comparing with known themes
+	# This is a heuristic approach since ggplot doesn't store the original theme name
+	
+	# Get the plot's theme
+	plot_theme <- plot_obj$theme
+	
+	# Compare with known themes
+	known_themes <- list(
+		theme_minimal = ggplot2::theme_minimal(),
+		theme_classic = ggplot2::theme_classic(),
+		theme_bw = ggplot2::theme_bw(),
+		theme_light = ggplot2::theme_light(),
+		theme_gray = ggplot2::theme_gray()
+	)
+	
+	# Simple heuristic: check for distinctive elements
+	# theme_classic: has axis lines, no grid
+	if (!is.null(plot_theme$axis.line) && !inherits(plot_theme$axis.line, "element_blank")) {
+		if (is.null(plot_theme$panel.grid.major) || inherits(plot_theme$panel.grid.major, "element_blank")) {
+			return("theme_classic")
+		}
+	}
+	
+	# theme_bw: white background, black borders
+	if (!is.null(plot_theme$panel.background) && !inherits(plot_theme$panel.background, "element_blank")) {
+		if (!is.null(plot_theme$panel.background$fill) && plot_theme$panel.background$fill == "white") {
+			return("theme_bw")
+		}
+	}
+	
+	# theme_light: light gray background
+	if (!is.null(plot_theme$panel.background) && !inherits(plot_theme$panel.background, "element_blank")) {
+		if (!is.null(plot_theme$panel.background$fill) && plot_theme$panel.background$fill == "white") {
+			# Check for light gray grid
+			if (!is.null(plot_theme$panel.grid.major) && !inherits(plot_theme$panel.grid.major, "element_blank")) {
+				if (!is.null(plot_theme$panel.grid.major$colour) && plot_theme$panel.grid.major$colour == "white") {
+					return("theme_light")
+				}
+			}
+		}
+	}
+	
+	# theme_gray: gray background
+	if (!is.null(plot_theme$panel.background) && !inherits(plot_theme$panel.background, "element_blank")) {
+		if (!is.null(plot_theme$panel.background$fill) && plot_theme$panel.background$fill == "gray90") {
+			return("theme_gray")
+		}
+	}
+	
+	# Default to theme_minimal if we can't detect
+	return("theme_minimal")
+}
+
 # Generate colors from a palette for a given number of levels
 generate_palette_colors <- function(n, palette_name) {
 	if (n <= 0) return(character(0))
@@ -61,8 +120,15 @@ theme_pane_ui <- function(rv) {
 		get_current_value(rv, ap, setting, default)
 	}
 	
-	# Get current values
-	theme_val <- get_val("theme", BASE$theme)
+	# Get current values - detect theme from plot if not set
+	theme_val <- get_val("theme", NULL)
+	if (is.null(theme_val)) {
+		# Try to detect the actual theme from the plot
+		theme_val <- detect_plot_theme(rv$plots[[ap]])
+		cat("DEBUG: Detected theme from plot:", theme_val, "for plot", ap, "\n")
+	} else {
+		cat("DEBUG: Using stored theme:", theme_val, "for plot", ap, "\n")
+	}
 	base_size_val <- get_val("base_size", BASE$base_size)
 	legend_pos_val <- get_val("legend_pos", BASE$legend_pos)
 	legend_box_val <- get_val("legend_box", FALSE)
@@ -281,6 +347,13 @@ register_theme_observers <- function(input, rv, session) {
 		if (rv$is_hydrating) return()
 		plot_index <- get_plot_index()
 		if (is.null(plot_index)) return()
+		
+		# Only update if the theme is actually different from what's currently stored
+		current_theme <- get_current_value(rv, as.character(plot_index), "theme", NULL)
+		if (!is.null(current_theme) && input$ui_theme == current_theme) {
+			# Theme hasn't changed, don't update
+			return()
+		}
 		
 		load_plot_settings(rv, plot_index)
 		rv$edits[[as.character(plot_index)]]$theme <- input$ui_theme
