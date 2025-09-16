@@ -47,19 +47,11 @@ theme_pane_ui <- function(rv) {
 	
 	# Generate default colors if levels exist but colors don't
 	if (length(colour_lvls) > 0 && length(colour_cols) == 0) {
-		colour_cols <- if (requireNamespace("viridisLite", quietly = TRUE)) {
-			viridisLite::viridis(length(colour_lvls), option = "viridis")
-		} else {
-			grDevices::rainbow(length(colour_lvls))
-		}
+		colour_cols <- generate_palette_colors(length(colour_lvls), "viridis")
 	}
 	
 	if (length(fill_lvls) > 0 && length(fill_cols) == 0) {
-		fill_cols <- if (requireNamespace("viridisLite", quietly = TRUE)) {
-			viridisLite::viridis(length(fill_lvls), option = "viridis")
-		} else {
-			grDevices::rainbow(length(fill_lvls))
-		}
+		fill_cols <- generate_palette_colors(length(fill_lvls), "viridis")
 	}
 	
 	grid_major_on <- isTRUE(grid_major_val)
@@ -108,6 +100,48 @@ theme_pane_ui <- function(rv) {
 		} else {
 			textInput(id, label, value = value %||% "#1f77b4", placeholder = "#RRGGBB or name")
 		}
+	}
+	
+	# Generate colors from a palette for a given number of levels
+	generate_palette_colors <- function(n, palette_name) {
+		if (n <= 0) return(character(0))
+		
+		# Handle viridis-like palettes
+		if (palette_name %in% c("viridis", "magma", "plasma", "inferno", "cividis")) {
+			if (requireNamespace("viridisLite", quietly = TRUE)) {
+				return(viridisLite::viridis(n, option = palette_name))
+			} else {
+				return(grDevices::rainbow(n))
+			}
+		}
+		
+		# Handle RColorBrewer palettes
+		if (palette_name %in% c("Set1", "Set2", "Set3", "Paired", "Dark2", "Accent")) {
+			if (requireNamespace("RColorBrewer", quietly = TRUE)) {
+				# Get the maximum number of colors available for this palette
+				max_colors <- RColorBrewer::brewer.pal.info[palette_name, "maxcolors"]
+				if (n <= max_colors) {
+					# Use the exact number of colors needed
+					colors <- RColorBrewer::brewer.pal(min(n, max_colors), palette_name)
+					if (n < max_colors) {
+						# If we need fewer colors, take the first n
+						colors <- colors[1:n]
+					}
+					return(colors)
+				} else {
+					# If we need more colors than available, use the max and extend with rainbow
+					base_colors <- RColorBrewer::brewer.pal(max_colors, palette_name)
+					extra_colors <- grDevices::rainbow(n - max_colors)
+					return(c(base_colors, extra_colors))
+				}
+			} else {
+				# Fallback to rainbow if RColorBrewer not available
+				return(grDevices::rainbow(n))
+			}
+		}
+		
+		# Default fallback
+		return(grDevices::rainbow(n))
 	}
 	
 	tagList(
@@ -348,7 +382,31 @@ register_theme_observers <- function(input, rv, session) {
 		cat("  Current stored value:", get_current_value(rv, plot_index, "palette", "None"), "\n")
 		
 		load_plot_settings(rv, plot_index)
-		rv$edits[[as.character(plot_index)]]$palette <- input$ui_palette
+		index_str <- as.character(plot_index)
+		rv$edits[[index_str]]$palette <- input$ui_palette
+		
+		# Automatically apply palette colors to existing levels
+		pal <- input$ui_palette
+		if (pal != "None") {
+			# Get current levels from the plot
+			e <- rv$edits[[index_str]]
+			colour_lvls <- e$colour_levels %||% character(0)
+			fill_lvls <- e$fill_levels %||% character(0)
+			
+			# Generate colors for existing colour levels
+			if (length(colour_lvls) > 0) {
+				cols <- generate_palette_colors(length(colour_lvls), pal)
+				rv$edits[[index_str]]$colour_levels_cols <- cols
+				cat("  Auto-applied palette to", length(colour_lvls), "colour levels\n")
+			}
+			
+			# Generate colors for existing fill levels
+			if (length(fill_lvls) > 0) {
+				cols <- generate_palette_colors(length(fill_lvls), pal)
+				rv$edits[[index_str]]$fill_levels_cols <- cols
+				cat("  Auto-applied palette to", length(fill_lvls), "fill levels\n")
+			}
+		}
 	}, ignoreInit = TRUE, ignoreNULL = TRUE)
 	
 	# Revert colors to original
@@ -422,21 +480,13 @@ register_theme_observers <- function(input, rv, session) {
 		
 		# Generate colors for existing colour levels
 		if (length(colour_lvls) > 0) {
-			cols <- if (requireNamespace("viridisLite", quietly = TRUE)) {
-				viridisLite::viridis(length(colour_lvls), option = if (pal == "None") "viridis" else pal)
-			} else {
-				grDevices::rainbow(length(colour_lvls))
-			}
+			cols <- generate_palette_colors(length(colour_lvls), if (pal == "None") "viridis" else pal)
 			rv$edits[[index_str]]$colour_levels_cols <- cols
 		}
 		
 		# Generate colors for existing fill levels
 		if (length(fill_lvls) > 0) {
-			cols <- if (requireNamespace("viridisLite", quietly = TRUE)) {
-				viridisLite::viridis(length(fill_lvls), option = if (pal == "None") "viridis" else pal)
-			} else {
-				grDevices::rainbow(length(fill_lvls))
-			}
+			cols <- generate_palette_colors(length(fill_lvls), if (pal == "None") "viridis" else pal)
 			rv$edits[[index_str]]$fill_levels_cols <- cols
 		}
 		
