@@ -459,28 +459,45 @@ register_theme_observers <- function(input, rv, session) {
 			
 			new_color <- input[[input_id]]
 			if (!is.null(new_color) && nzchar(new_color)) {
+				cat("\n=== COLOR PICKER CHANGED ===\n")
+				cat("  Input ID:", input_id, "\n")
+				cat("  Color type:", color_type, "\n")
+				cat("  Level index:", level_index, "\n")
+				cat("  New color:", new_color, "\n")
+				cat("  Plot index:", plot_index, "\n")
+				
 				# Ensure the color arrays exist and are the right length
 				if (color_type == "colour") {
 					colour_levels <- rv$edits[[index_str]]$colour_levels %||% character(0)
+					cat("  Colour levels:", paste(colour_levels, collapse = ", "), "\n")
 					if (level_index <= length(colour_levels)) {
 						# Initialize color array if needed
 						if (is.null(rv$edits[[index_str]]$colour_levels_cols)) {
 							rv$edits[[index_str]]$colour_levels_cols <- character(length(colour_levels))
+							cat("  Initialized colour_levels_cols array\n")
 						}
 						# Update the specific color
 						rv$edits[[index_str]]$colour_levels_cols[level_index] <- new_color
-						cat("DEBUG: Updated colour", level_index, "to", new_color, "for plot", plot_index, "\n")
+						cat("  Updated colour", level_index, "to", new_color, "for plot", plot_index, "\n")
+						cat("  Current colour_levels_cols:", paste(rv$edits[[index_str]]$colour_levels_cols, collapse = ", "), "\n")
+					} else {
+						cat("  ERROR: Level index", level_index, "exceeds colour levels length", length(colour_levels), "\n")
 					}
 				} else if (color_type == "fill") {
 					fill_levels <- rv$edits[[index_str]]$fill_levels %||% character(0)
+					cat("  Fill levels:", paste(fill_levels, collapse = ", "), "\n")
 					if (level_index <= length(fill_levels)) {
 						# Initialize color array if needed
 						if (is.null(rv$edits[[index_str]]$fill_levels_cols)) {
 							rv$edits[[index_str]]$fill_levels_cols <- character(length(fill_levels))
+							cat("  Initialized fill_levels_cols array\n")
 						}
 						# Update the specific color
 						rv$edits[[index_str]]$fill_levels_cols[level_index] <- new_color
-						cat("DEBUG: Updated fill", level_index, "to", new_color, "for plot", plot_index, "\n")
+						cat("  Updated fill", level_index, "to", new_color, "for plot", plot_index, "\n")
+						cat("  Current fill_levels_cols:", paste(rv$edits[[index_str]]$fill_levels_cols, collapse = ", "), "\n")
+					} else {
+						cat("  ERROR: Level index", level_index, "exceeds fill levels length", length(fill_levels), "\n")
 					}
 				}
 			}

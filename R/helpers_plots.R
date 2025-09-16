@@ -752,4 +752,27 @@ load_plot_settings <- function(rv, plot_index) {
 	} else {
 		cat("DEBUG: load_plot_settings - edits already exist for plot", plot_index, "preserving", length(rv$edits[[index_str]]), "settings\n")
 	}
+	
+	# Ensure color levels are available in edits if they exist in originals
+	# This is needed for color pickers to work properly
+	if (!is.null(rv$originals[[index_str]])) {
+		# Copy color levels from originals to edits if not already present
+		if (!is.null(rv$originals[[index_str]]$colour_levels) && is.null(rv$edits[[index_str]]$colour_levels)) {
+			rv$edits[[index_str]]$colour_levels <- rv$originals[[index_str]]$colour_levels
+			cat("DEBUG: Copied colour_levels from originals to edits for plot", plot_index, "\n")
+		}
+		if (!is.null(rv$originals[[index_str]]$fill_levels) && is.null(rv$edits[[index_str]]$fill_levels)) {
+			rv$edits[[index_str]]$fill_levels <- rv$originals[[index_str]]$fill_levels
+			cat("DEBUG: Copied fill_levels from originals to edits for plot", plot_index, "\n")
+		}
+		# Copy color values from originals to edits if not already present
+		if (!is.null(rv$originals[[index_str]]$colour_levels_cols) && is.null(rv$edits[[index_str]]$colour_levels_cols)) {
+			rv$edits[[index_str]]$colour_levels_cols <- rv$originals[[index_str]]$colour_levels_cols
+			cat("DEBUG: Copied colour_levels_cols from originals to edits for plot", plot_index, "\n")
+		}
+		if (!is.null(rv$originals[[index_str]]$fill_levels_cols) && is.null(rv$edits[[index_str]]$fill_levels_cols)) {
+			rv$edits[[index_str]]$fill_levels_cols <- rv$originals[[index_str]]$fill_levels_cols
+			cat("DEBUG: Copied fill_levels_cols from originals to edits for plot", plot_index, "\n")
+		}
+	}
 }
