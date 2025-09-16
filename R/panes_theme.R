@@ -41,6 +41,27 @@ theme_pane_ui <- function(rv) {
 	colour_lvls <- get_val("colour_levels", character(0))
 	fill_lvls <- get_val("fill_levels", character(0))
 	
+	# Get color values, generate defaults if missing
+	colour_cols <- get_val("colour_levels_cols", character(0))
+	fill_cols <- get_val("fill_levels_cols", character(0))
+	
+	# Generate default colors if levels exist but colors don't
+	if (length(colour_lvls) > 0 && length(colour_cols) == 0) {
+		colour_cols <- if (requireNamespace("viridisLite", quietly = TRUE)) {
+			viridisLite::viridis(length(colour_lvls), option = "viridis")
+		} else {
+			grDevices::rainbow(length(colour_lvls))
+		}
+	}
+	
+	if (length(fill_lvls) > 0 && length(fill_cols) == 0) {
+		fill_cols <- if (requireNamespace("viridisLite", quietly = TRUE)) {
+			viridisLite::viridis(length(fill_lvls), option = "viridis")
+		} else {
+			grDevices::rainbow(length(fill_lvls))
+		}
+	}
+	
 	grid_major_on <- isTRUE(grid_major_val)
 	grid_minor_on <- isTRUE(grid_minor_val)
 	legend_box_on <- isTRUE(legend_box_val)
@@ -178,7 +199,7 @@ theme_pane_ui <- function(rv) {
 								tagList(
 									div(style="margin-bottom:4px;",
 										tags$span(colour_lvls[i], style="font-weight:bold; margin-right:8px;"),
-										make_color_input(paste0("ui_colour_", i), "", get_val(paste0("colour_levels_cols"), character(0))[i])
+										make_color_input(paste0("ui_colour_", i), "", colour_cols[i] %||% "#1f77b4")
 									)
 								)
 							})
@@ -189,7 +210,7 @@ theme_pane_ui <- function(rv) {
 								tagList(
 									div(style="margin-bottom:4px;",
 										tags$span(fill_lvls[i], style="font-weight:bold; margin-right:8px;"),
-										make_color_input(paste0("ui_fill_", i), "", get_val(paste0("fill_levels_cols"), character(0))[i])
+										make_color_input(paste0("ui_fill_", i), "", fill_cols[i] %||% "#1f77b4")
 									)
 								)
 							})
@@ -422,57 +443,54 @@ register_theme_observers <- function(input, rv, session) {
 		showNotification("Palette applied to existing levels", type = "message")
 	}, ignoreInit = TRUE)
 	
-	# Dynamic level color pickers - with proper debouncing for smooth color selection
-	observe({
-		plot_index <- get_plot_index()
-		if (is.null(plot_index)) return()
-		
-		# Check if we're in the middle of a UI update (switching plots)
-		if (rv$is_hydrating) return()
-		
-		index_str <- as.character(plot_index)
-		e <- rv$edits[[index_str]]
-		
-
-		
-		# Color pickers with proper debouncing for smooth interaction
-		if (!is.null(e$colour_levels) && length(e$colour_levels)) {
-			lapply(seq_along(e$colour_levels), function(i) {
-				# Create reactive expression for each color picker
-				color_reactive <- reactive({ input[[paste0("ui_colour_", i)]] })
-				# Apply debounce to the reactive expression
-				debounced_color <- debounce(color_reactive, 300)
-				
-				observeEvent(debounced_color(), {
-					if (rv$is_hydrating) return()
-					new_color <- debounced_color()
-					# Only update if we have a valid color and it's different from current
-					if (!is.null(new_color) && nzchar(new_color) && 
-						(is.null(e$colour_levels_cols[i]) || e$colour_levels_cols[i] != new_color)) {
-						rv$edits[[index_str]]$colour_levels_cols[i] <- new_color
+	# Dynamic level color pickers - create observers for each possible color picker
+	# This approach is more robust than creating observers inside an observe() block
+	
+	# Create a function to handle color picker updates
+	create_color_picker_observer <- function(input_id, color_type, level_index) {
+		observeEvent(input[[input_id]], {
+			if (rv$is_hydrating) return()
+			
+			plot_index <- get_plot_index()
+			if (is.null(plot_index)) return()
+			
+			load_plot_settings(rv, plot_index)
+			index_str <- as.character(plot_index)
+			
+			new_color <- input[[input_id]]
+			if (!is.null(new_color) && nzchar(new_color)) {
+				# Ensure the color arrays exist and are the right length
+				if (color_type == "colour") {
+					colour_levels <- rv$edits[[index_str]]$colour_levels %||% character(0)
+					if (level_index <= length(colour_levels)) {
+						# Initialize color array if needed
+						if (is.null(rv$edits[[index_str]]$colour_levels_cols)) {
+							rv$edits[[index_str]]$colour_levels_cols <- character(length(colour_levels))
+						}
+						# Update the specific color
+						rv$edits[[index_str]]$colour_levels_cols[level_index] <- new_color
+						cat("DEBUG: Updated colour", level_index, "to", new_color, "for plot", plot_index, "\n")
 					}
-				}, ignoreInit = TRUE, ignoreNULL = TRUE)
-			})
-		}
-		
-		if (!is.null(e$fill_levels) && length(e$fill_levels)) {
-			lapply(seq_along(e$fill_levels), function(i) {
-				# Create reactive expression for each fill picker
-				fill_reactive <- reactive({ input[[paste0("ui_fill_", i)]] })
-				# Apply debounce to the reactive expression
-				debounced_fill <- debounce(fill_reactive, 300)
-				
-				observeEvent(debounced_fill(), {
-					if (rv$is_hydrating) return()
-					new_color <- debounced_fill()
-					# Only update if we have a valid color and it's different from current
-					if (!is.null(new_color) && nzchar(new_color) && 
-						(is.null(e$fill_levels_cols[i]) || e$fill_levels_cols[i] != new_color)) {
-						rv$edits[[index_str]]$fill_levels_cols[i] <- new_color
+				} else if (color_type == "fill") {
+					fill_levels <- rv$edits[[index_str]]$fill_levels %||% character(0)
+					if (level_index <= length(fill_levels)) {
+						# Initialize color array if needed
+						if (is.null(rv$edits[[index_str]]$fill_levels_cols)) {
+							rv$edits[[index_str]]$fill_levels_cols <- character(length(fill_levels))
+						}
+						# Update the specific color
+						rv$edits[[index_str]]$fill_levels_cols[level_index] <- new_color
+						cat("DEBUG: Updated fill", level_index, "to", new_color, "for plot", plot_index, "\n")
 					}
-				}, ignoreInit = TRUE, ignoreNULL = TRUE)
-			})
-		}
+				}
+			}
+		}, ignoreInit = TRUE, ignoreNULL = TRUE)
+	}
+	
+	# Create observers for up to 10 color pickers (should be enough for most cases)
+	lapply(1:10, function(i) {
+		create_color_picker_observer(paste0("ui_colour_", i), "colour", i)
+		create_color_picker_observer(paste0("ui_fill_", i), "fill", i)
 	})
 	
 
