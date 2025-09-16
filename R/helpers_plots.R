@@ -11,9 +11,14 @@ apply_edits <- function(p, edits) {
   if (!is.null(e$xlab))      p <- p + ggplot2::labs(x = e$xlab)
   if (!is.null(e$ylab))      p <- p + ggplot2::labs(y = e$ylab)
   
-  # theme
-  tfun <- get_theme_fun(e$theme %||% BASE$theme)
-  p <- p + tfun(base_size = e$base_size %||% BASE$base_size)
+  # theme - only apply if explicitly set
+  if (!is.null(e$theme)) {
+    tfun <- get_theme_fun(e$theme)
+    p <- p + tfun(base_size = e$base_size %||% BASE$base_size)
+  } else if (!is.null(e$base_size)) {
+    # Only apply base_size if theme is not set but base_size is
+    p <- p + ggplot2::theme(text = ggplot2::element_text(size = e$base_size))
+  }
   
   # Colors: apply per-level mappings using limits-aligned values to avoid name mismatch
   apply_level_colors <- function(p) {

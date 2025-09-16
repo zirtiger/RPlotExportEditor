@@ -44,10 +44,10 @@ init_reactive_state <- function() {
     # Export settings
     export = list(),
     
-      # UI state
-  is_hydrating = FALSE,
-  force_ui_update = 0,
-  last_mainmenu = "text"
+    # UI state
+    is_hydrating = FALSE,
+    force_ui_update = 0,
+    last_mainmenu = "text"
   )
 }
 
